@@ -15,15 +15,15 @@ std::map<std::string, std::string> parseArgs(int argc, char** argv) {
             std::string key;
             std::string val;
             if (eq != std::string::npos) {
-                key = arg.substr(0, eq);
-                val = arg.substr(eq);
+                key = trim(arg.substr(0, eq));
+                val = trim(arg.substr(eq + 1));
             } else {
                 key = arg;
             }
             if (key == "target") {
                 throw InputError("Invalid option - \"--target\"");
             }
-            m[key] = arg;
+            m[key] = val;
         } else {
             if (!targetFound) {
                 targetFound = true;
@@ -38,17 +38,54 @@ std::map<std::string, std::string> parseArgs(int argc, char** argv) {
     return m;
 }
 
+void printConf(const VMConfig& conf) {
+    std::cout << "max_cycles - " << conf.max_cycles << std::endl;
+    std::cout << "max_heap - " << conf.max_heap << std::endl;
+    std::cout << "max_stack - " << conf.max_stack << std::endl;
+    std::cout << "in - " << (conf.in.has_value() ? conf.in.value() : std::string("default"))
+              << std::endl;
+    std::cout << "out - " << (conf.out.has_value() ? conf.out.value() : std::string("default"))
+              << std::endl;
+    std::cout << "verbose - " << conf.verbose << std::endl;
+}
+
 int main(int argc, char** argv) {
-    std::map<std::string, std::string> args;
+    std::map<std::string, std::string> defaultConf;
+    std::map<std::string, std::string> confFile;
+    std::map<std::string, std::string> cmd;
+
+    defaultConf["max_cycles"] = "100000";
+    defaultConf["max_heap"] = "100MB";
+    defaultConf["max_stack"] = "10MB";
+    defaultConf["stdin"] = "default";
+    defaultConf["stdout"] = "default";
+    defaultConf["args"] = "";
+    defaultConf["verbose"] = "true";
+
+    std::map<std::string, std::string> args = defaultConf;
     try {
-        args = parseArgs(argc, argv);
+        cmd = parseArgs(argc, argv);
     } catch (const InputError& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-    if (args.size() == 0) {
+    if (!(cmd.contains("target"))) {
         std::cout << "No input provided. Use --help for usage information." << std::endl;
         return 1;
+    }
+
+    VMConfig conf;
+    auto cfg = args.find("config");
+    if (cfg != args.end()) {
+        confFile = loadConfig((*cfg).second);
+    }
+
+    for (const auto& p : confFile) {
+        args[p.first] = p.second;
+    }
+
+    for (const auto& p : cmd) {
+        args[p.first] = p.second;
     }
 
     if (args.contains("help")) {
@@ -102,6 +139,10 @@ int main(int argc, char** argv) {
         }
         return 0;
     }
+
+    fillConfig(conf, args);
+
+    printConf(conf);
 
     return 0;
 }

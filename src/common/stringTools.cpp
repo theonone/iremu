@@ -72,3 +72,13 @@ std::string join(const std::vector<std::string>& strs, const std::string& betwee
     }
     return res;
 }
+
+std::string lowercase(const std::string& s) {
+    std::string newStr = s;
+    for (size_t i = 0; i < s.length(); ++i) {
+        if (s[i] < 91 && s[i] > 64) {
+            newStr[i] = s[i] + 32;
+        }
+    }
+    return newStr;
+}

@@ -1,4 +1,8 @@
 #pragma once
+#include <map>
+
 #include "../common/config.hpp"
 
-VMConfig parseCommandLine(int argc, char** argv);
+void fillConfig(VMConfig& conf, std::map<std::string, std::string>& args);
+
+std::map<std::string, std::string> loadConfig(const std::string& conf);
