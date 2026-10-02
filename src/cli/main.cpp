@@ -40,8 +40,10 @@ std::map<std::string, std::string> parseArgs(int argc, char** argv) {
 
 void printConf(const VMConfig& conf) {
     std::cout << "max_cycles - " << conf.max_cycles << std::endl;
-    std::cout << "max_heap - " << conf.max_heap << std::endl;
-    std::cout << "max_stack - " << conf.max_stack << std::endl;
+    std::cout << "max_heap - " << conf.max_heap << "B" << std::endl;
+    std::cout << "max_stack - " << conf.max_stack << "B" << std::endl;
+    std::cout << "args - " << conf.args << std::endl;
+
     std::cout << "in - " << (conf.in.has_value() ? conf.in.value() : std::string("default"))
               << std::endl;
     std::cout << "out - " << (conf.out.has_value() ? conf.out.value() : std::string("default"))
@@ -69,14 +71,16 @@ int main(int argc, char** argv) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
+
     if (!(cmd.contains("target"))) {
-        std::cout << "No input provided. Use --help for usage information." << std::endl;
+        std::cout << "No target executable provided. Use --help for usage information."
+                  << std::endl;
         return 1;
     }
 
     VMConfig conf;
-    auto cfg = args.find("config");
-    if (cfg != args.end()) {
+    auto cfg = cmd.find("config");
+    if (cfg != cmd.end()) {
         confFile = loadConfig((*cfg).second);
     }
 

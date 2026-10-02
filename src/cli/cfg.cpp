@@ -13,9 +13,9 @@ int64_t parseSize(std::string s) {
     s = lowercase(s);
     if (s == "unlimited")
         return -1;
-    size_t len = s.length();
+    int64_t len = s.length();
     int64_t mult = 1;
-    size_t suffLen = 0;
+    int64_t suffLen = 0;
     if (len > 1 && s[len - 1] == 'b') {
         suffLen = 1;
         if (len > 2) {
@@ -35,15 +35,16 @@ int64_t parseSize(std::string s) {
         throw InputError("Invalid size - " + s);
     }
     int64_t val;
-    int64_t orig = val;
     s = s.substr(0, s.length() - suffLen);
     try {
-        val = std::stoul(s);
+        val = std::stoll(s);
     } catch (const std::invalid_argument& e) {
         throw InputError("Value cannot be parsed as a uint");
     } catch (const std::out_of_range& e) {
         throw InputError("Value out of range (unsigned long)");
     }
+    int64_t orig = val;
+
     val *= mult;
     if (val < orig) {
         throw InputError("Overflow! The amount of bytes does not fit into uint64_t max / 2");
@@ -120,6 +121,8 @@ void fillConfig(VMConfig& conf, std::map<std::string, std::string>& args) {
 
     if (!(in.empty()))
         conf.in = in;
+
+    conf.args = args["args"];
 
     conf.verbose = parseBool(args["verbose"]);
 }
