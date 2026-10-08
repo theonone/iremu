@@ -15,6 +15,21 @@ std::string readFileAsString(const std::string& filename) {
     return ss.str();
 }
 
+ByteBuffer readFileAsBytes(const std::string& filename) {
+    std::ifstream inputFile(filename, std::ios_base::binary);
+
+    inputFile.seekg(0, std::ios_base::end);
+    auto length = inputFile.tellg();
+    inputFile.seekg(0, std::ios_base::beg);
+
+    ByteBuffer buff;
+    buff.reserve(length);
+    inputFile.read(reinterpret_cast<char*>(buff.data()), length);
+
+    inputFile.close();
+    return buff;
+}
+
 void writeToFile(const std::string& filename, const std::string& data) {
     if (filename.find("/") != std::string::npos) {
         std::filesystem::create_directories(std::filesystem::path(filename).parent_path());

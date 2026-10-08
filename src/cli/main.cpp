@@ -3,6 +3,7 @@
 
 #include "../common/errors.hpp"
 #include "../common/stringTools.hpp"
+#include "../vm/x64-linux/vm.hpp"
 #include "cfg.hpp"
 
 std::map<std::string, std::string> parseArgs(int argc, char** argv) {
@@ -42,13 +43,15 @@ void printConf(const VMConfig& conf) {
     std::cout << "max_cycles - " << conf.max_cycles << std::endl;
     std::cout << "max_heap - " << conf.max_heap << "B" << std::endl;
     std::cout << "max_stack - " << conf.max_stack << "B" << std::endl;
+    std::cout << "ram_size - " << conf.ram_size << "B" << std::endl;
+
     std::cout << "args - " << conf.args << std::endl;
 
     std::cout << "in - " << (conf.in.has_value() ? conf.in.value() : std::string("default"))
               << std::endl;
     std::cout << "out - " << (conf.out.has_value() ? conf.out.value() : std::string("default"))
               << std::endl;
-    std::cout << "verbose - " << conf.verbose << std::endl;
+    std::cout << "verbose - " << (conf.verbose ? "true " : "false") << std::endl;
 }
 
 int main(int argc, char** argv) {
@@ -57,10 +60,11 @@ int main(int argc, char** argv) {
     std::map<std::string, std::string> cmd;
 
     defaultConf["max_cycles"] = "100000";
-    defaultConf["max_heap"] = "100MB";
-    defaultConf["max_stack"] = "10MB";
-    defaultConf["stdin"] = "default";
-    defaultConf["stdout"] = "default";
+    defaultConf["max_heap"] = "8MB";
+    defaultConf["max_stack"] = "4MB";
+    defaultConf["ram_size"] = "16MB";
+    defaultConf["in"] = "default";
+    defaultConf["out"] = "default";
     defaultConf["args"] = "";
     defaultConf["verbose"] = "true";
 
@@ -146,7 +150,12 @@ int main(int argc, char** argv) {
 
     fillConfig(conf, args);
 
-    printConf(conf);
+    if (conf.verbose) {
+        std::cout << "Configuration:" << std::endl;
+        printConf(conf);
+    }
+
+    VirtualMachine vm(conf);
 
     return 0;
 }

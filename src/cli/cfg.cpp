@@ -1,5 +1,6 @@
 #include "cfg.hpp"
 
+#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -8,11 +9,15 @@
 #include "../common/stringTools.hpp"
 
 // parses {{uint} {B/KB/MB/GB} | unlimited} into an amount of bytes. can assume the input is trimmed
-// already.
-int64_t parseSize(std::string s) {
+// already. if allowUnlimited is false, will throw upon encountering this value
+ssize_t parseSize(std::string s, bool allowUnlimited) {
     s = lowercase(s);
-    if (s == "unlimited")
-        return -1;
+    if (s == "unlimited") {
+        if (allowUnlimited) {
+            return -1;
+        }
+        throw InputError("\"Unlimited\" not allowed here");
+    }
     int64_t len = s.length();
     int64_t mult = 1;
     int64_t suffLen = 0;
@@ -52,7 +57,7 @@ int64_t parseSize(std::string s) {
     return val;
 }
 
-int64_t parseInt(const std::string& s) {
+ssize_t parseInt(const std::string& s) {
     if (s == "unlimited") {
         return -1;
     }
@@ -78,7 +83,8 @@ std::map<std::string, std::string> loadConfig(const std::string& conf) {
     std::vector<std::string> forbiddenOptions = {"target", "help", "disclaimer", "config"};
     std::vector<std::string> lines = split(readFileAsString(conf), '\n', true);
     for (size_t i = 0; i < lines.size(); ++i) {
-        std::string l = trim(removeAfterSuffix(lines[i], "#"));
+        std::string l =
+            trim(removeAfterSuffix(lines[i], "#"));  // will also cut on hash symbols inside strings
         if (l.empty())
             continue;
         std::string key;
@@ -111,9 +117,14 @@ std::map<std::string, std::string> loadConfig(const std::string& conf) {
 }
 
 void fillConfig(VMConfig& conf, std::map<std::string, std::string>& args) {
+    std::set<std::string> names = {"max_cycles", "max_stack", "max_heap", "out",    "in",
+                                   "args",       "verbose",   "config",   "target", "ram_size"};
+
     conf.max_cycles = parseInt(args["max_cycles"]);
-    conf.max_stack = parseSize(args["max_stack"]);
-    conf.max_heap = parseSize(args["max_heap"]);
+    conf.max_stack = parseSize(args["max_stack"], true);
+    conf.max_heap = parseSize(args["max_heap"], true);
+    conf.ram_size = parseSize(args["ram_size"], false);
+
     auto& out = args["out"];
     auto& in = args["in"];
     if (!(out.empty()))
@@ -125,4 +136,9 @@ void fillConfig(VMConfig& conf, std::map<std::string, std::string>& args) {
     conf.args = args["args"];
 
     conf.verbose = parseBool(args["verbose"]);
+
+    for (const auto& p : args) {
+        if (!(names.contains(p.first)))
+            throw InputError("Unknown config option - " + p.first);
+    }
 }
