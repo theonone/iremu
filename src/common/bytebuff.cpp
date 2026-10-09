@@ -134,7 +134,8 @@ ByteBuffer ByteBuffer::operator+(const std::string& str) const {
 
 uint8_t& ByteBuffer::operator[](size_t index) {
     if (index >= _size)
-        throw std::out_of_range("Index out of range");
+        throw std::out_of_range("Index " + std::to_string(index) + " out of range (" +
+                                std::to_string(_size) + ")");
     return _data[index];
 }
 

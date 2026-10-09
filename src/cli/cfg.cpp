@@ -10,7 +10,7 @@
 
 // parses {{uint} {B/KB/MB/GB} | unlimited} into an amount of bytes. can assume the input is trimmed
 // already. if allowUnlimited is false, will throw upon encountering this value
-ssize_t parseSize(std::string s, bool allowUnlimited) {
+int64_t parseSize(std::string s, bool allowUnlimited) {
     s = lowercase(s);
     if (s == "unlimited") {
         if (allowUnlimited) {
@@ -57,12 +57,12 @@ ssize_t parseSize(std::string s, bool allowUnlimited) {
     return val;
 }
 
-ssize_t parseInt(const std::string& s) {
+int64_t parseInt(const std::string& s) {
     if (s == "unlimited") {
         return -1;
     }
     try {
-        return std::stoul(s);
+        return std::stoll(s);
     } catch (const std::invalid_argument& err) {
         throw InputError("Value cannot be parsed as a uint");
     } catch (const std::out_of_range& err) {
@@ -124,6 +124,7 @@ void fillConfig(VMConfig& conf, std::map<std::string, std::string>& args) {
     conf.max_stack = parseSize(args["max_stack"], true);
     conf.max_heap = parseSize(args["max_heap"], true);
     conf.ram_size = parseSize(args["ram_size"], false);
+    conf.target = args["target"];
 
     auto& out = args["out"];
     auto& in = args["in"];

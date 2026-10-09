@@ -2,11 +2,15 @@
 
 #include "../../common/bytebuff.hpp"
 
+class VMState;
+
 class ExecutableLoader {
    private:
-    ByteBuffer fileContents;
+    ByteBuffer _fileContents;
+    VMState* _state = nullptr;
 
    public:
     ExecutableLoader() = default;
-    void load(const std::string& target);
+    void load();
+    void init(VMState* state);
 };

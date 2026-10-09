@@ -23,7 +23,7 @@ ByteBuffer readFileAsBytes(const std::string& filename) {
     inputFile.seekg(0, std::ios_base::beg);
 
     ByteBuffer buff;
-    buff.reserve(length);
+    buff.resize(length);
     inputFile.read(reinterpret_cast<char*>(buff.data()), length);
 
     inputFile.close();

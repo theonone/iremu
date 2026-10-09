@@ -5,7 +5,7 @@
 #include "../../common/errors.hpp"
 #include "state.hpp"
 
-MemoryRegion& Memory::_findRegion(size_t addr) {
+MemoryRegion& Memory::_findRegion(uint64_t addr) {
     // regions are sorted by r1
     for (auto& r : _regions) {
         if (addr >= r.r1 && addr <= r.r2) {
@@ -76,7 +76,7 @@ void Memory::mapRegion(MemoryRegion rgn) {
     }
 }
 
-uint8_t Memory::read8(size_t addr) {
+uint8_t Memory::read8(uint64_t addr) {
     auto& region = _findRegion(addr);
     if (region.perm & MEM_PERM_R) {
         return _ram[addr];
@@ -84,7 +84,7 @@ uint8_t Memory::read8(size_t addr) {
     throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow reading");
 }
 
-uint16_t Memory::read16(size_t addr) {
+uint16_t Memory::read16(uint64_t addr) {
     auto& region = _findRegion(addr);
     if (addr + 1 > region.r2) {
         throw MemoryError("Read of 2 bytes at " + std::to_string(addr) +
@@ -97,7 +97,7 @@ uint16_t Memory::read16(size_t addr) {
     }
     throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow reading");
 }
-uint32_t Memory::read32(size_t addr) {
+uint32_t Memory::read32(uint64_t addr) {
     auto& region = _findRegion(addr);
     if (addr + 3 > region.r2) {
         throw MemoryError("Read of 4 bytes at " + std::to_string(addr) +
@@ -110,7 +110,7 @@ uint32_t Memory::read32(size_t addr) {
     }
     throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow reading");
 }
-uint64_t Memory::read64(size_t addr) {
+uint64_t Memory::read64(uint64_t addr) {
     auto& region = _findRegion(addr);
     if (addr + 7 > region.r2) {
         throw MemoryError("Read of 8 bytes at " + std::to_string(addr) +
@@ -123,9 +123,9 @@ uint64_t Memory::read64(size_t addr) {
     }
     throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow reading");
 }
-ByteBuffer Memory::read(size_t addr, size_t len) {
+ByteBuffer Memory::read(uint64_t addr, uint64_t len) {
     auto& region = _findRegion(addr);
-    if (addr + len > region.r2) {
+    if (addr + len - 1 > region.r2) {
         throw MemoryError("Read of " + std::to_string(len) + " bytes at " + std::to_string(addr) +
                           " spills out of the region");
     }
@@ -135,14 +135,14 @@ ByteBuffer Memory::read(size_t addr, size_t len) {
     throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow reading");
 }
 
-void Memory::write8(size_t addr, uint8_t value) {
+void Memory::write8(uint64_t addr, uint8_t value) {
     auto& region = _findRegion(addr);
     if (!(region.perm & MEM_PERM_W)) {
         throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow writing");
     }
     _ram[addr] = value;
 }
-void Memory::write16(size_t addr, uint16_t value) {
+void Memory::write16(uint64_t addr, uint16_t value) {
     auto& region = _findRegion(addr);
     if (addr + 1 > region.r2) {
         throw MemoryError("Write of 2 bytes at " + std::to_string(addr) +
@@ -153,7 +153,7 @@ void Memory::write16(size_t addr, uint16_t value) {
     }
     std::memcpy(_ram.data() + addr, &value, sizeof(uint16_t));
 }
-void Memory::write32(size_t addr, uint32_t value) {
+void Memory::write32(uint64_t addr, uint32_t value) {
     auto& region = _findRegion(addr);
     if (addr + 3 > region.r2) {
         throw MemoryError("Write of 4 bytes at " + std::to_string(addr) +
@@ -164,7 +164,7 @@ void Memory::write32(size_t addr, uint32_t value) {
     }
     std::memcpy(_ram.data() + addr, &value, sizeof(uint32_t));
 }
-void Memory::write64(size_t addr, uint64_t value) {
+void Memory::write64(uint64_t addr, uint64_t value) {
     auto& region = _findRegion(addr);
     if (addr + 7 > region.r2) {
         throw MemoryError("Write of 8 bytes at " + std::to_string(addr) +
@@ -176,14 +176,14 @@ void Memory::write64(size_t addr, uint64_t value) {
     }
     std::memcpy(_ram.data() + addr, &value, sizeof(uint64_t));
 }
-void Memory::write(size_t addr, const ByteBuffer& data) {
+void Memory::write(uint64_t addr, const ByteBuffer& data) {
     auto& region = _findRegion(addr);
-    if (addr + data.size() > region.r2) {
+    if (addr + data.size() - 1 > region.r2) {
         throw MemoryError("Write of " + std::to_string(data.size()) + " bytes at " +
                           std::to_string(addr) + " spills out of the region");
     }
-    if (region.perm & MEM_PERM_W) {
-        std::memcpy(_ram.data() + addr, data.cdata(), data.size());
+    if (!(region.perm & MEM_PERM_W)) {
+        throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow writing");
     }
-    throw MemoryError("Memory region at " + std::to_string(addr) + " does not allow writing");
+    std::memcpy(_ram.data() + addr, data.cdata(), data.size());
 }
