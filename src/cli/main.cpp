@@ -3,7 +3,7 @@
 
 #include "../common/errors.hpp"
 #include "../common/stringTools.hpp"
-#include "../vm/x64-linux/vm.hpp"
+#include "../vm/linux-elf/vm.hpp"
 #include "cfg.hpp"
 
 std::map<std::string, std::string> parseArgs(int argc, char** argv) {
@@ -59,10 +59,10 @@ int main(int argc, char** argv) {
     std::map<std::string, std::string> confFile;
     std::map<std::string, std::string> cmd;
 
-    defaultConf["max_cycles"] = "100000";
-    defaultConf["max_heap"] = "8MB";
-    defaultConf["max_stack"] = "4MB";
-    defaultConf["ram_size"] = "16MB";
+    defaultConf["max_cycles"] = "99999";
+    defaultConf["max_heap"] = "8KB";
+    defaultConf["max_stack"] = "4KB";
+    defaultConf["ram_size"] = "16KB";
     defaultConf["in"] = "default";
     defaultConf["out"] = "default";
     defaultConf["args"] = "";

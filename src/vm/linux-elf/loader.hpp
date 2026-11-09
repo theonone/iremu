@@ -9,6 +9,9 @@ class ExecutableLoader {
     ByteBuffer _fileContents;
     VMState* _state = nullptr;
 
+    void _validateELF();
+    void _processPhEntries();
+
    public:
     ExecutableLoader() = default;
     void load();

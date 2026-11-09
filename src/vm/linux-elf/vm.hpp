@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../common/config.hpp"
-#include "state.hpp"
+#include "../x64/state.hpp"
 
 class VirtualMachine {
    private:
