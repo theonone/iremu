@@ -2,10 +2,10 @@
 
 #include "../../common/config.hpp"
 #include "cpu.hpp"
-#include "memory.hpp"
+#include "pmem.hpp"
 
 struct VMState {
     CPU cpu;
-    Memory memory;
+    PhysicalMemory ram;
     VMConfig config;
 };

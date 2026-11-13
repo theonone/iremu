@@ -21,7 +21,7 @@ class PhysicalMemory {
     // _pageBitmap[i] = true if used
     std::vector<bool> _pageBitmap;
 
-    uint64_t _pageSize = 4096;
+    uint64_t _pageSize;
 
    public:
     PhysicalMemory();

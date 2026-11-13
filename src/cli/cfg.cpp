@@ -117,13 +117,15 @@ std::map<std::string, std::string> loadConfig(const std::string& conf) {
 }
 
 void fillConfig(VMConfig& conf, std::map<std::string, std::string>& args) {
-    std::set<std::string> names = {"max_cycles", "max_stack", "max_heap", "out",    "in",
-                                   "args",       "verbose",   "config",   "target", "ram_size"};
+    std::set<std::string> names = {"max_cycles", "max_stack", "max_heap", "out",
+                                   "in",         "args",      "verbose",  "config",
+                                   "target",     "ram_size",  "page_size"};
 
     conf.max_cycles = parseInt(args["max_cycles"]);
     conf.max_stack = parseSize(args["max_stack"], true);
     conf.max_heap = parseSize(args["max_heap"], true);
     conf.ram_size = parseSize(args["ram_size"], false);
+    conf.page_size = parseSize(args["page_size"], false);
     conf.target = args["target"];
 
     auto& out = args["out"];

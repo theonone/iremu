@@ -5,7 +5,7 @@
 #include "loader.hpp"
 
 VirtualMachine::VirtualMachine(const VMConfig& config) : _state({}, {}, config) {
-    _state.memory.init(&_state);
+    _state.ram.init(&_state);
     ExecutableLoader loader;
     loader.init(&_state);
     loader.load();

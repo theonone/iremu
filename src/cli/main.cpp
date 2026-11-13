@@ -44,6 +44,7 @@ void printConf(const VMConfig& conf) {
     std::cout << "max_heap - " << conf.max_heap << "B" << std::endl;
     std::cout << "max_stack - " << conf.max_stack << "B" << std::endl;
     std::cout << "ram_size - " << conf.ram_size << "B" << std::endl;
+    std::cout << "page_size - " << conf.page_size << "B" << std::endl;
 
     std::cout << "args - " << conf.args << std::endl;
 
@@ -67,6 +68,7 @@ int main(int argc, char** argv) {
     defaultConf["out"] = "default";
     defaultConf["args"] = "";
     defaultConf["verbose"] = "true";
+    defaultConf["page_size"] = "4KB";
 
     std::map<std::string, std::string> args = defaultConf;
     try {
