@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <map>
 
 #include "../../common/bytebuff.hpp"
 
@@ -15,8 +15,9 @@ constexpr uint8_t MEM_PERM_WX = MEM_PERM_W | MEM_PERM_X;
 
 class VMState;
 
-struct VPageAlloc {
-    uint64_t basePAddr;            // lowest address of the allocation
+struct VPage {
+    uint64_t basePAddr;            // lowest address of the allocation in physical memory
+    uint64_t baseVAddr;            // convenient to have, even though it's the key in _pageMap
     uint64_t pages;                // page count
     uint8_t perm = MEM_PERM_NONE;  // bit mask of permissions
 };
@@ -24,8 +25,14 @@ struct VPageAlloc {
 class VirtualMemory {
    private:
     VMState* _state = nullptr;
-    std::unordered_map<uint64_t, VPageAlloc> _pageMap;  // vAddr -> page
-    uint64_t _pageSize;                                 // vPage size must match pPage size
+    std::map<uint64_t, VPage> _pageMap;  // vAddr -> page
+    uint64_t _pageSize;                  // vPage size must match pPage size
+    uint8_t _p2;                         // for bit shifting instead of division
+    inline uint64_t _firstPgAddr(
+        uint64_t vaddr) const;  // returns the lowest virtual address of the page
+
+    uint8_t _findPower2();
+    const VPage& _findVPage(uint64_t vaddr) const;
 
    public:
     VirtualMemory();
@@ -33,21 +40,23 @@ class VirtualMemory {
 
     int64_t allocate(uint64_t bytes, uint8_t perm = MEM_PERM_NONE,
                      int64_t vaddr = -1);  // int -> addr, -1 if can't allocate
-    void free(uint64_t addr);
+                                           // if vaddr < 0, the pages will be allocated at the
+                                           // lowest available address
+    void free(uint64_t vaddr);
 
-    uint8_t read8(uint64_t addr);
-    uint16_t read16(uint64_t addr);
-    uint32_t read32(uint64_t addr);
-    uint64_t read64(uint64_t addr);
-    ByteBuffer read(uint64_t addr, uint64_t len);
+    uint8_t read8(uint64_t vaddr);
+    uint16_t read16(uint64_t vaddr);
+    uint32_t read32(uint64_t vaddr);
+    uint64_t read64(uint64_t vaddr);
+    ByteBuffer read(uint64_t vaddr, uint64_t len);
 
     // fetch methods - TODO
 
-    void write8(uint64_t addr, uint8_t value);
-    void write16(uint64_t addr, uint16_t value);
-    void write32(uint64_t addr, uint32_t value);
-    void write64(uint64_t addr, uint64_t value);
-    void write(uint64_t addr, const ByteBuffer& data);
+    void write8(uint64_t vaddr, uint8_t value);
+    void write16(uint64_t vaddr, uint16_t value);
+    void write32(uint64_t vaddr, uint32_t value);
+    void write64(uint64_t vaddr, uint64_t value);
+    void write(uint64_t vaddr, const ByteBuffer& data);
 
     VirtualMemory(const VirtualMemory&) = delete;
     VirtualMemory& operator=(const VirtualMemory&) = delete;

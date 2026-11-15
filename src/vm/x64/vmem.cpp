@@ -8,37 +8,128 @@
 // for the sake of performance, we'll assume we never fail to init() an instance before using it,
 // even though that's not a very good idea in terms of safety
 
+// equivalent to (vaddr / _pageSize) * _pageSize
+inline uint64_t VirtualMemory::_firstPgAddr(uint64_t vaddr) const { return (vaddr >> _p2) << _p2; }
+
+uint8_t VirtualMemory::_findPower2() {
+    for (uint8_t i = 0; i < 64; ++i) {
+        if (pow(2, i) == _pageSize) {
+            return i;
+        }
+    }
+    throw MemoryError("page_size in bytes must be a power of 2");
+}
+
+const VPage& VirtualMemory::_findVPage(uint64_t vaddr) const {
+    uint64_t pg = _firstPgAddr(vaddr);
+    auto it = _pageMap.find(pg);
+    if (it == _pageMap.end()) {
+        throw MemoryError("No page allocated at " + std::to_string(vaddr));
+    }
+    return it->second;
+}
+
 VirtualMemory::VirtualMemory() {}
 
 void VirtualMemory::init(VMState* state) {
     _state = state;
     _pageSize = state->config.page_size;
     if (((uint64_t)(pow(2, 64) - 1) % (_pageSize)) != 0) {
-        throw MemoryError("2^64-1 must be divisible by page_size");
+        throw MemoryError("2^64 must be divisible by page_size");
     }
+    _p2 = _findPower2();
 }
 
 int64_t VirtualMemory::allocate(uint64_t bytes, uint8_t perm, int64_t vaddr) {
-    int64_t addr = _state->ram.allocate(bytes);
-    if (addr == -1) {
+    auto pages = (bytes / _pageSize) + (bytes % _pageSize != 0);
+    uint64_t pageBase = 0;
+    uint64_t sizeToAlloc = pages * _pageSize;
+
+    if (vaddr >= 0) {
+        pageBase = _firstPgAddr(vaddr);
+
+        for (const auto& p : _pageMap) {
+            if (p.first < pageBase) {
+                continue;
+            }
+            if ((p.first - pageBase) < sizeToAlloc) {
+                return -1;
+            }
+        }
+    } else {
+        uint64_t next = UINT64_MAX;
+        bool found = false;
+        for (const auto& p : _pageMap) {
+            next = p.first;
+            if ((next - pageBase) >= sizeToAlloc) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return -1;
+        }
+    }
+    if (pageBase + bytes < bytes) {  // if overflows
         return -1;
     }
-    auto pages = (bytes / _pageSize) + (bytes % _pageSize != 0);
+
+    int64_t paddr = _state->ram.allocate(bytes);
+    if (paddr == -1) {
+        return -1;
+    }
     // atp we've allocated $pages pages starting at $addr
-    _pageMap[addr] = {.basePAddr = addr, .pages = pages, .perm = perm};
-    return -1;
+    _pageMap[pageBase] = {.basePAddr = paddr, .baseVAddr = pageBase, .pages = pages, .perm = perm};
+    return pageBase;
 }
 
-void VirtualMemory::free(uint64_t addr) {}
+void VirtualMemory::free(uint64_t vaddr) {
+    auto lPageAddr = _firstPgAddr(vaddr);
+    auto it = _pageMap.find(lPageAddr);
+    if (it == _pageMap.end()) {
+        throw MemoryError("Cannot free memory at " + std::to_string(vaddr) +
+                          " - no page is allocated there");
+    }
+    for (uint64_t i = 0; i < it->second.pages; ++i) {
+        _state->ram.free(lPageAddr + (_pageSize * i));
+    }
+    _pageMap.erase(lPageAddr);
+}
 
-uint8_t VirtualMemory::read8(uint64_t addr) { return 0; }
-uint16_t VirtualMemory::read16(uint64_t addr) { return 0; }
-uint32_t VirtualMemory::read32(uint64_t addr) { return 0; }
-uint64_t VirtualMemory::read64(uint64_t addr) { return 0; }
-ByteBuffer VirtualMemory::read(uint64_t addr, uint64_t len) { return 0; }
+uint8_t VirtualMemory::read8(uint64_t vaddr) {
+    auto pg = _findVPage(vaddr);
+    if (!(pg.perm & MEM_PERM_R)) {
+        throw MemoryError("Cannot read from " + std::to_string(vaddr) +
+                          " - reading not permitted at the corresponding page");
+    }
+    uint64_t paddr = pg.basePAddr + (vaddr - pg.baseVAddr);
+    return _state->ram.read8(paddr);  // a single byte never spills into a different page
+}
 
-void VirtualMemory::write8(uint64_t addr, uint8_t value) {}
-void VirtualMemory::write16(uint64_t addr, uint16_t value) {}
-void VirtualMemory::write32(uint64_t addr, uint32_t value) {}
-void VirtualMemory::write64(uint64_t addr, uint64_t value) {}
-void VirtualMemory::write(uint64_t addr, const ByteBuffer& data) {}
+// if we allocate N pages of vram at once via one allocate() call, then all N pages will be adjacent
+// in the physical memory
+uint16_t VirtualMemory::read16(uint64_t vaddr) {
+    auto pg = _findVPage(vaddr);
+    if (!(pg.perm & MEM_PERM_R)) {
+        throw MemoryError("Cannot read from " + std::to_string(vaddr) +
+                          " - reading not permitted at the corresponding page");
+    }
+
+    // if the last addr of the read is less or equal to the last address of the allocation, then it
+    // doesn't spill into a different allocation
+    if ((pg.baseVAddr + _pageSize * pg.pages) >= (vaddr + 2)) {
+        uint64_t paddr = pg.basePAddr + (vaddr - pg.baseVAddr);
+        return _state->ram.read16(paddr);
+    }
+
+    // spilling case
+}
+uint32_t VirtualMemory::read32(uint64_t vaddr) { return 0; }
+uint64_t VirtualMemory::read64(uint64_t vaddr) { return 0; }
+ByteBuffer VirtualMemory::read(uint64_t vaddr, uint64_t len) { return 0; }
+
+void VirtualMemory::write8(uint64_t vaddr, uint8_t value) {}
+void VirtualMemory::write16(uint64_t vaddr, uint16_t value) {}
+void VirtualMemory::write32(uint64_t vaddr, uint32_t value) {}
+void VirtualMemory::write64(uint64_t vaddr, uint64_t value) {}
+void VirtualMemory::write(uint64_t vaddr, const ByteBuffer& data) {}
