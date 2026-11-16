@@ -1,7 +1,5 @@
 #include "vmem.hpp"
 
-#include <math.h>
-
 #include "../../common/errors.hpp"
 #include "state.hpp"
 
@@ -13,7 +11,7 @@ inline uint64_t VirtualMemory::_firstPgAddr(uint64_t vaddr) const { return (vadd
 
 uint8_t VirtualMemory::_findPower2() {
     for (uint8_t i = 0; i < 64; ++i) {
-        if (pow(2, i) == _pageSize) {
+        if ((uint64_t(1) << i) == _pageSize) {
             return i;
         }
     }
@@ -21,12 +19,17 @@ uint8_t VirtualMemory::_findPower2() {
 }
 
 const VPage& VirtualMemory::_findVPage(uint64_t vaddr) const {
-    uint64_t pg = _firstPgAddr(vaddr);
-    auto it = _pageMap.find(pg);
-    if (it == _pageMap.end()) {
+    auto it = _pageMap.upper_bound(vaddr);
+
+    if (it == _pageMap.begin())
         throw MemoryError("No page allocated at " + std::to_string(vaddr));
-    }
-    return it->second;
+    --it;
+
+    const VPage& pg = it->second;
+    if (vaddr - pg.baseVAddr >= pg.pages * _pageSize)
+        throw MemoryError("No page allocated at " + std::to_string(vaddr));
+
+    return pg;
 }
 
 VirtualMemory::VirtualMemory() {}
@@ -34,9 +37,6 @@ VirtualMemory::VirtualMemory() {}
 void VirtualMemory::init(VMState* state) {
     _state = state;
     _pageSize = state->config.page_size;
-    if (((uint64_t)(pow(2, 64) - 1) % (_pageSize)) != 0) {
-        throw MemoryError("2^64 must be divisible by page_size");
-    }
     _p2 = _findPower2();
 }
 
@@ -57,16 +57,17 @@ int64_t VirtualMemory::allocate(uint64_t bytes, uint8_t perm, int64_t vaddr) {
             }
         }
     } else {
-        uint64_t next = UINT64_MAX;
         bool found = false;
         for (const auto& p : _pageMap) {
-            next = p.first;
-            if ((next - pageBase) >= sizeToAlloc) {
+            if ((p.first - pageBase) >= sizeToAlloc) {
                 found = true;
                 break;
             }
+            pageBase = p.first + (p.second.pages * _pageSize);
         }
-        if (!found) {
+
+        // the second condition will basically never be true, so might as well just remove it
+        if (!found && ((pageBase + sizeToAlloc > INT64_MAX))) {
             return -1;
         }
     }
@@ -74,7 +75,7 @@ int64_t VirtualMemory::allocate(uint64_t bytes, uint8_t perm, int64_t vaddr) {
         return -1;
     }
 
-    int64_t paddr = _state->ram.allocate(bytes);
+    int64_t paddr = _state->ram.allocate(pages);
     if (paddr == -1) {
         return -1;
     }
@@ -91,7 +92,7 @@ void VirtualMemory::free(uint64_t vaddr) {
                           " - no page is allocated there");
     }
     for (uint64_t i = 0; i < it->second.pages; ++i) {
-        _state->ram.free(lPageAddr + (_pageSize * i));
+        _state->ram.free(it->second.basePAddr + (_pageSize * i));
     }
     _pageMap.erase(lPageAddr);
 }
@@ -123,6 +124,13 @@ uint16_t VirtualMemory::read16(uint64_t vaddr) {
     }
 
     // spilling case
+    uint64_t paddr1 = pg.basePAddr + (vaddr - pg.baseVAddr);
+    uint8_t b1 = _state->ram.read8(paddr1);
+
+    auto pg2 = _findVPage(vaddr + 1);
+    uint64_t paddr2 = pg2.basePAddr + ((vaddr + 1) - pg2.baseVAddr);
+    uint16_t b2 = _state->ram.read8(paddr2) << 8;
+    return b1 | b2;
 }
 uint32_t VirtualMemory::read32(uint64_t vaddr) { return 0; }
 uint64_t VirtualMemory::read64(uint64_t vaddr) { return 0; }

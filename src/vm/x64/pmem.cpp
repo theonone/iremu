@@ -23,25 +23,24 @@ void PhysicalMemory::init(VMState* state) {
     _pageBitmap = std::vector<bool>(rsz / _pageSize, false);
 }
 
-int64_t PhysicalMemory::allocate(uint64_t bytes) {
-    uint64_t wholePages = (bytes / _pageSize) + (bytes % _pageSize != 0);
-    if (wholePages == 0) {
+int64_t PhysicalMemory::allocate(uint64_t pages) {
+    if (pages == 0) {
         throw MemoryError("Cannot allocate 0 pages");
     }
-    uint64_t copy = wholePages;
-    // need to find a gap at least $wholePages pages long
+    uint64_t copy = pages;
+    // need to find a gap at least $pages pages long
     for (size_t i = 0; i < _pageBitmap.size(); ++i) {
         if (!_pageBitmap[i]) {
             if ((--copy) == 0) {
                 // mark pages as used
-                for (size_t j = 0; j < wholePages; ++j) {
+                for (size_t j = 0; j < pages; ++j) {
                     _pageBitmap[i - j] = true;
                 }
                 // return the first address of the range
-                return (i - wholePages + 1) * _pageSize;
+                return (i - pages + 1) * _pageSize;
             }
         } else {
-            copy = wholePages;
+            copy = pages;
         }
     }
     return -1;
