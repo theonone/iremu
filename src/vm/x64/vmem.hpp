@@ -15,7 +15,7 @@ constexpr uint8_t MEM_PERM_WX = MEM_PERM_W | MEM_PERM_X;
 
 class VMState;
 
-struct VPage {
+struct VAlloc {
     uint64_t basePAddr;            // lowest address of the allocation in physical memory
     uint64_t baseVAddr;            // convenient to have, even though it's the key in _pageMap
     uint64_t pages;                // page count
@@ -25,15 +25,15 @@ struct VPage {
 class VirtualMemory {
    private:
     VMState* _state = nullptr;
-    std::map<uint64_t, VPage> _pageMap;  // vAddr -> page. TODO: think how to use an unordered_map
-    uint64_t _pageSize;                  // vPage size must match pPage size
-    uint8_t _p2;                         // for bit shifting instead of division
+    std::map<uint64_t, VAlloc> _pageMap;  // vAddr -> page. TODO: think how to use an unordered_map
+    uint64_t _pageSize;                   // VAlloc size must match pPage size
+    uint8_t _p2;                          // for bit shifting instead of division
     inline uint64_t _firstPgAddr(
         uint64_t vaddr) const;  // returns the lowest virtual address of the page
     uint64_t _minVAddr;
 
     uint8_t _findPower2();
-    const VPage& _findVPage(uint64_t vaddr) const;
+    const VAlloc& _findVAlloc(uint64_t vaddr) const;
 
    public:
     VirtualMemory();
@@ -41,11 +41,11 @@ class VirtualMemory {
 
     void init(VMState* state);
 
+    // allocates at least $bytes bytes starting somewhere
+    uint64_t allocate(uint64_t bytes, uint8_t perm);
+
     // allocates at least $bytes bytes starting at $vaddr
-    int64_t allocate(uint64_t bytes, uint8_t perm = MEM_PERM_NONE,
-                     int64_t vaddr = -1);  // int -> addr, -1 if can't allocate
-                                           // if vaddr < 0, the pages will be allocated at the
-                                           // lowest available address
+    uint64_t allocate(uint64_t bytes, uint64_t vaddr, uint8_t perm);
 
     void free(uint64_t vaddr);
 
@@ -62,6 +62,8 @@ class VirtualMemory {
     void write32(uint64_t vaddr, uint32_t value);
     void write64(uint64_t vaddr, uint64_t value);
     void write(uint64_t vaddr, const ByteBuffer& data);
+
+    const std::map<uint64_t, VAlloc>& pageMap() const;
 
     VirtualMemory(const VirtualMemory&) = delete;
     VirtualMemory& operator=(const VirtualMemory&) = delete;

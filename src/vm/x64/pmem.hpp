@@ -27,7 +27,7 @@ class PhysicalMemory {
     PhysicalMemory();
     void init(VMState* state);
 
-    int64_t allocate(uint64_t pages);  // pages -> addr, -1 if can't allocate
+    uint64_t allocate(uint64_t pages);  // pages -> addr
     void free(uint64_t addr);
 
     uint8_t read8(uint64_t addr);

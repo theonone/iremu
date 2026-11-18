@@ -23,7 +23,7 @@ void PhysicalMemory::init(VMState* state) {
     _pageBitmap = std::vector<bool>(rsz / _pageSize, false);
 }
 
-int64_t PhysicalMemory::allocate(uint64_t pages) {
+uint64_t PhysicalMemory::allocate(uint64_t pages) {
     if (pages == 0) {
         throw MemoryError("Cannot allocate 0 pages");
     }
@@ -43,7 +43,7 @@ int64_t PhysicalMemory::allocate(uint64_t pages) {
             copy = pages;
         }
     }
-    return -1;
+    throw MemoryError("PhysicalMemory: could not allocate " + std::to_string(pages) + " pages");
 }
 
 void PhysicalMemory::free(uint64_t addr) {
