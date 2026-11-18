@@ -13,12 +13,12 @@ PhysicalMemory::PhysicalMemory() {
 
 void PhysicalMemory::init(VMState* state) {
     auto rsz = state->config.ram_size;
+    _pageSize = state->config.page_size;
     if (rsz % _pageSize != 0) {
         throw InputError("RAM size must be divisible by page size (" + std::to_string(rsz) + ",  " +
                          std::to_string(_pageSize) + ")");
     }
     _state = state;
-    _pageSize = state->config.page_size;
     _ram.resize(rsz);
     _pageBitmap = std::vector<bool>(rsz / _pageSize, false);
 }

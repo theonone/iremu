@@ -25,23 +25,28 @@ struct VPage {
 class VirtualMemory {
    private:
     VMState* _state = nullptr;
-    std::map<uint64_t, VPage> _pageMap;  // vAddr -> page
+    std::map<uint64_t, VPage> _pageMap;  // vAddr -> page. TODO: think how to use an unordered_map
     uint64_t _pageSize;                  // vPage size must match pPage size
     uint8_t _p2;                         // for bit shifting instead of division
     inline uint64_t _firstPgAddr(
         uint64_t vaddr) const;  // returns the lowest virtual address of the page
+    uint64_t _minVAddr;
 
     uint8_t _findPower2();
     const VPage& _findVPage(uint64_t vaddr) const;
 
    public:
     VirtualMemory();
+    ~VirtualMemory();
+
     void init(VMState* state);
 
+    // allocates at least $bytes bytes starting at $vaddr
     int64_t allocate(uint64_t bytes, uint8_t perm = MEM_PERM_NONE,
                      int64_t vaddr = -1);  // int -> addr, -1 if can't allocate
                                            // if vaddr < 0, the pages will be allocated at the
                                            // lowest available address
+
     void free(uint64_t vaddr);
 
     uint8_t read8(uint64_t vaddr);
