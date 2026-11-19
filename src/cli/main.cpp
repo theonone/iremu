@@ -158,6 +158,14 @@ int main(int argc, char** argv) {
     }
 
     VirtualMachine vm(conf);
-
+    int result = 1;
+    try {
+        result = vm.run();
+    } catch (std::exception& e) {
+        std::cout << e.what() << std::endl;
+    }
+    if (conf.verbose) {
+        std::cout << "Process finished with exit code " << result << std::endl;
+    }
     return 0;
 }
