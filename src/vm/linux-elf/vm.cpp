@@ -1,15 +1,14 @@
 #include "vm.hpp"
 
-#include "loader.hpp"
+#include "../cfgProv.hpp"
 
 VirtualMachine::VirtualMachine(const VMConfig& config) : _state({}, {}, config) {
-    _state.ram.init(&_state);
+    ConfigProvider::set(config);
+    _state.ram.init();
 }
 
 int VirtualMachine::run() {
-    ExecutableLoader loader;
-    loader.init(&_state);
-    loader.load();
-    _processes.emplace(0, &_state, 0, 0);
+    _processes.emplace(std::piecewise_construct, std::forward_as_tuple(0),
+                       std::forward_as_tuple(&_state, 0, -1));
     return 0;
 }

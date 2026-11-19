@@ -4,11 +4,8 @@
 
 #include "../../common/bytebuff.hpp"
 
-class VMState;
-
 class PhysicalMemory {
    private:
-    VMState* _state = nullptr;
     ByteBuffer _ram;
 
     // using u8 instead of bool, because bools take a byte instead of a single bit. an element here
@@ -25,7 +22,7 @@ class PhysicalMemory {
 
    public:
     PhysicalMemory();
-    void init(VMState* state);
+    void init();
 
     uint64_t allocate(uint64_t pages);  // pages -> addr
     void free(uint64_t addr);

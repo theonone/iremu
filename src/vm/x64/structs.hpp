@@ -1,5 +1,9 @@
 #pragma once
+
 #include <cstdint>
+
+#include "heap.hpp"
+#include "stack.hpp"
 
 struct Registers {
     uint64_t rflags;
@@ -22,4 +26,10 @@ struct Registers {
     uint64_t r13;
     uint64_t r14;
     uint64_t r15;
+};
+
+struct ExecutionContext {
+    HeapMemory& heap;
+    StackMemory& stack;
+    Registers& regs;
 };

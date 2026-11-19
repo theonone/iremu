@@ -3,7 +3,6 @@
 #include "../../common/errors.hpp"
 #include "../../common/fileIO.hpp"
 #include "../../common/tools.hpp"
-#include "../x64/state.hpp"
 
 void ExecutableLoader::_validateELF() {
     if (_fileContents.size() < 64) {
@@ -39,16 +38,10 @@ void ExecutableLoader::_processPhEntries() {
     uint64_t shoff = _fileContents[0x28];
 }
 
-void ExecutableLoader::load() {
-    if (_state == nullptr) {
-        throw RuntimeError("ExecutableLoader is not initialized");
-    }
-
-    _fileContents = readFileAsBytes(_state->config.target);
+void ExecutableLoader::load(const std::string& filepath, VirtualMemory& vmem, Registers& regs) {
+    _fileContents = readFileAsBytes(filepath);
     _validateELF();
     _processPhEntries();
 
     //
 }
-
-void ExecutableLoader::init(VMState* state) { _state = state; }
