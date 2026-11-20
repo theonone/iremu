@@ -14,6 +14,8 @@ void ProcessManager::createProcess(int32_t pid, const std::string& elf, int32_t 
                        std::make_tuple(_vmState, pid, ppid, elf));
 }
 
+// threads and processes will probably be alerting the scheduler about pausing/resuming, so we can
+// just keep track whether there are ready ones or not
 int ProcessManager::run() {
     if (_processes.size() == 0) {
         throw RuntimeError("ProcessManager: no processes to run");
@@ -21,13 +23,11 @@ int ProcessManager::run() {
     uint64_t n = 999;
     auto it = _processes.begin();
     while (true) {
-        std::cout << "checking process " << it->second.pid() << std::endl;
         if (it->second.state() == PROC_STATE_READY) {
             auto ctx = it->second.ctx();
             if (ctx.has_value()) {
                 std::cout << "running process " << it->second.pid() << std::endl;
                 _vmState->cpu.run(ctx.value(), n);
-                std::cout << "finished running process " << it->second.pid() << std::endl;
             }
         }
         if (++it == _processes.end()) {

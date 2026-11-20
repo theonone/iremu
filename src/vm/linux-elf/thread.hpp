@@ -18,6 +18,7 @@ class Thread {
     Thread(int32_t tid);
 
     uint8_t state() const;
+    int32_t tid() const;
 
     StackMemory& stack();
     Registers& regs();

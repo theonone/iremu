@@ -32,4 +32,6 @@ struct ExecutionContext {
     HeapMemory& heap;
     StackMemory& stack;
     Registers& regs;
+    int32_t pid;
+    int32_t tid;
 };

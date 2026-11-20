@@ -8,6 +8,7 @@ Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string&
     : _pid(pid), _ppid(ppid) {
     _vmem.init(vmState);
     _threads.emplace_back(0);
+    _threads.emplace_back(1);
 
     ExecutableLoader loader;
     loader.load(elf, _vmem, _threads[0].regs());
@@ -17,6 +18,10 @@ Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string&
 
 std::optional<ExecutionContext> Process::ctx() {
     size_t orig = _nextThread;
+
+    // should basically never happen, but fine
+    if (_threads.empty())
+        return std::nullopt;
 
     while (true) {
         size_t thisThread = _nextThread;
@@ -28,7 +33,13 @@ std::optional<ExecutionContext> Process::ctx() {
 
         Thread& thr = _threads[thisThread];
         if (thr.state() == THR_STATE_READY) {
-            return ExecutionContext{.heap = _heap, .stack = thr.stack(), .regs = thr.regs()};
+            return ExecutionContext{
+                .heap = _heap,
+                .stack = thr.stack(),
+                .regs = thr.regs(),
+                .pid = _pid,
+                .tid = thr.tid(),
+            };
         }
 
         if (_nextThread == orig) {  // looped back to the initial => no ready threads
