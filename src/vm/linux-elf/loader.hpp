@@ -7,11 +7,14 @@
 class ExecutableLoader {
    private:
     ByteBuffer _fileContents;
+    std::string _fp;
+    VirtualMemory* _vmem = nullptr;
+    Registers* _regs = nullptr;
 
     void _validateELF();
     void _processPhEntries();
 
    public:
     ExecutableLoader() = default;
-    void load(const std::string& filepath, VirtualMemory& vmem, Registers& regs);
+    void load(const std::string& filepath, VirtualMemory* vmem, Registers* regs);
 };

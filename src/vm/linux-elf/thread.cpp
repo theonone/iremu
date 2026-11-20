@@ -1,6 +1,6 @@
 #include "thread.hpp"
 
-Thread::Thread(int32_t tid) : _tid(tid) {}
+Thread::Thread(int32_t tid, VirtualMemory& vmem) : _tid(tid), _stack(vmem) {}
 
 uint8_t Thread::state() const { return _state; }
 

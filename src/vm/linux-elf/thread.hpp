@@ -15,7 +15,7 @@ class Thread {
     uint8_t _state = THR_STATE_READY;
 
    public:
-    Thread(int32_t tid);
+    Thread(int32_t tid, VirtualMemory& vmem);
 
     uint8_t state() const;
     int32_t tid() const;

@@ -38,8 +38,10 @@ void ExecutableLoader::_processPhEntries() {
     uint64_t shoff = _fileContents[0x28];
 }
 
-void ExecutableLoader::load(const std::string& filepath, VirtualMemory& vmem, Registers& regs) {
+void ExecutableLoader::load(const std::string& filepath, VirtualMemory* vmem, Registers* regs) {
     _fileContents = readFileAsBytes(filepath);
+    _vmem = vmem;
+    _regs = regs;
     _validateELF();
     _processPhEntries();
 
