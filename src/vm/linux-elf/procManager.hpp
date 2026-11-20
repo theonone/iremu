@@ -4,15 +4,17 @@
 
 #include "process.hpp"
 
-class VMState;
-
 class ProcessManager {
    private:
     std::unordered_map<int32_t, Process> _processes;
-    VMState* _state = nullptr;
+    VMState* _vmState = nullptr;
 
    public:
     ProcessManager();
-    void init(VMState* state);
-    void run();
+    void init(VMState* vmState);
+
+    void createProcess(int32_t pid, const std::string& elf, int32_t ppid);
+
+    // @returns exit code of the target
+    int run();
 };

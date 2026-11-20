@@ -1,15 +1,13 @@
 #pragma once
 
-#include <unordered_map>
-
 #include "../../common/config.hpp"
-#include "../x64/state.hpp"
-#include "process.hpp"
+#include "../x64/vmState.hpp"
+#include "procManager.hpp"
 
 class VirtualMachine {
    private:
-    VMState _state;
-    std::unordered_map<int, Process> _processes;
+    VMState _vmState;
+    ProcessManager _procManager;
 
    public:
     VirtualMachine(const VMConfig& config);

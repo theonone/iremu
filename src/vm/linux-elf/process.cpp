@@ -1,22 +1,49 @@
 #include "process.hpp"
 
-#include "../x64/state.hpp"
+#include "../x64/vmState.hpp"
 #include "loader.hpp"
 #include "thread.hpp"
 
-Process::Process(int32_t pid, int32_t ppid) : _pid(pid), _ppid(ppid) {
-    ExecutableLoader loader;
+Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string& elf)
+    : _pid(pid), _ppid(ppid) {
+    _vmem.init(vmState);
+    _threads.emplace_back(0);
 
-    _threads.emplace_back(_threadCount++);
+    ExecutableLoader loader;
+    loader.load(elf, _vmem, _threads[0].regs());
+
+    _state = PROC_STATE_READY;
 }
 
-ExecutionContext Process::ctx() {
-    Thread& thread = _threads[_currThread];
-    return {.heap = _heap, .stack = thread.stack(), .regs = thread.regs()};
+std::optional<ExecutionContext> Process::ctx() {
+    size_t orig = _nextThread;
+
+    while (true) {
+        size_t thisThread = _nextThread;
+
+        ++_nextThread;
+        if (_nextThread == _threads.size()) {
+            _nextThread = 0;
+        }
+
+        Thread& thr = _threads[thisThread];
+        if (thr.state() == THR_STATE_READY) {
+            return ExecutionContext{.heap = _heap, .stack = thr.stack(), .regs = thr.regs()};
+        }
+
+        if (_nextThread == orig) {  // looped back to the initial => no ready threads
+            return std::nullopt;
+        }
+    }
 }
 
 VirtualMemory& Process::vmem() { return _vmem; }
 
-int Process::exitStatus() const { return _exitStatus; }
+uint8_t Process::state() const { return _state; }
+
+int32_t Process::pid() const { return _pid; }
+int32_t Process::ppid() const { return _ppid; }
+
+int Process::exitCode() const { return _exitCode; }
 
 StackMemory& Thread::stack() { return _stack; }

@@ -6,12 +6,9 @@ class VMState;
 
 class CPU {
    private:
-    Registers _regs;
-    VMState* _state = nullptr;
+    VMState* _vmState = nullptr;
 
    public:
-    void step();
-    void run();
-    const Registers& regs() const;
-    void init(VMState* state);
+    void run(ExecutionContext ctx, uint64_t n);
+    void init(VMState* vmState);
 };

@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "../../common/errors.hpp"
+#include "../cfgProv.hpp"
 #include "vmState.hpp"
 
 // for the sake of performance, we'll assume we never fail to init() an instance before using it,
@@ -55,8 +56,8 @@ VirtualMemory::~VirtualMemory() {
 }
 
 void VirtualMemory::init(VMState* vmState) {
-    _state = vmState;
-    _pageSize = vmState->config.page_size;
+    _vmState = vmState;
+    _pageSize = ConfigProvider::get().page_size;
     _p2 = _findPower2();
     _minVAddr = _pageSize;  // placeholder
 

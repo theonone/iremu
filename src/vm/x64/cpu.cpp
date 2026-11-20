@@ -1,15 +1,15 @@
 #include "cpu.hpp"
 
-#include "../../common/errors.hpp"
-#include "state.hpp"
+#include <chrono>
+#include <iostream>
+#include <thread>
 
-void CPU::step() {}
-void CPU::run() {
-    if (_state == nullptr) {
-        throw RuntimeError("Iremu bug: CPU object not initialized");
-    }
+#include "../../common/errors.hpp"
+#include "vmState.hpp"
+
+void CPU::run(ExecutionContext ctx, uint64_t n) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout << "running " << n << " CPU cycles" << std::endl;
 }
 
-const Registers& CPU::regs() const { return _regs; }
-
-void CPU::init(VMState* state) { _state = state; }
+void CPU::init(VMState* vmState) { _vmState = vmState; }

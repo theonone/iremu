@@ -2,13 +2,15 @@
 
 #include "../cfgProv.hpp"
 
-VirtualMachine::VirtualMachine(const VMConfig& config) : _state({}, {}, config) {
+VirtualMachine::VirtualMachine(const VMConfig& config) : _vmState({}, {}) {
     ConfigProvider::set(config);
-    _state.ram.init();
+    _vmState.ram.init();
+    _procManager.init(&_vmState);
 }
 
 int VirtualMachine::run() {
-    _processes.emplace(std::piecewise_construct, std::forward_as_tuple(0),
-                       std::forward_as_tuple(&_state, 0, -1));
-    return 0;
+    _procManager.createProcess(0, ConfigProvider::get().target, -1);
+    _procManager.createProcess(1, "./testing/benchmark2", 0);
+
+    return _procManager.run();
 }
