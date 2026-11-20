@@ -24,7 +24,7 @@ struct VAlloc {
 
 class VirtualMemory {
    private:
-    VMState* _state = nullptr;
+    VMState* _vmState = nullptr;
     std::map<uint64_t, VAlloc> _pageMap;  // vAddr -> page. TODO: think how to use an unordered_map
     uint64_t _pageSize;                   // VAlloc size must match pPage size
     uint8_t _p2;                          // for bit shifting instead of division
@@ -39,7 +39,7 @@ class VirtualMemory {
     VirtualMemory();
     ~VirtualMemory();
 
-    void init(VMState* state);
+    void init(VMState* vmState);
 
     // allocates at least $bytes bytes starting somewhere
     uint64_t allocate(uint64_t bytes, uint8_t perm);

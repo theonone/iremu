@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "../../common/errors.hpp"
-#include "state.hpp"
+#include "vmState.hpp"
 
 // for the sake of performance, we'll assume we never fail to init() an instance before using it,
 // even though that's not a very good idea in terms of safety
@@ -49,14 +49,14 @@ VirtualMemory::VirtualMemory() {}
 VirtualMemory::~VirtualMemory() {
     for (const auto& [vaddr, vAlloc] : _pageMap) {
         for (uint64_t i = 0; i < vAlloc.pages; ++i) {
-            _state->ram.free(vAlloc.basePAddr + (_pageSize * i));
+            _vmState->ram.free(vAlloc.basePAddr + (_pageSize * i));
         }
     }
 }
 
-void VirtualMemory::init(VMState* state) {
-    _state = state;
-    _pageSize = state->config.page_size;
+void VirtualMemory::init(VMState* vmState) {
+    _state = vmState;
+    _pageSize = vmState->config.page_size;
     _p2 = _findPower2();
     _minVAddr = _pageSize;  // placeholder
 
@@ -89,7 +89,7 @@ uint64_t VirtualMemory::allocate(uint64_t bytes, uint8_t perm) {
         throw MemoryError("Could not find space to allocate " + std::to_string(bytes) + " bytes");
     }
 
-    uint64_t paddr = _state->ram.allocate(pages);
+    uint64_t paddr = _vmState->ram.allocate(pages);
 
     // atp we've allocated $pages pages starting at $addr
     _pageMap[pageBase] = {.basePAddr = paddr, .baseVAddr = pageBase, .pages = pages, .perm = perm};
@@ -143,7 +143,7 @@ uint64_t VirtualMemory::allocate(uint64_t bytes, uint8_t perm) {
 //     if (sizeToAlloc > UINT64_MAX - pageBase)
 //         throw MemoryError("Allocation exceeds the address limit");
 
-//     uint64_t paddr = _state->ram.allocate(pages);
+//     uint64_t paddr = _vmState->ram.allocate(pages);
 
 //     // atp we've allocated $pages pages starting at $addr
 //     _pageMap[pageBase] = {.basePAddr = paddr, .baseVAddr = pageBase, .pages = pages, .perm =
@@ -193,7 +193,7 @@ uint64_t VirtualMemory::allocate(uint64_t bytes, uint64_t vaddr, uint8_t perm) {
         }
     }
 
-    uint64_t paddr = _state->ram.allocate(pages);
+    uint64_t paddr = _vmState->ram.allocate(pages);
 
     _pageMap[pageBase] = {.basePAddr = paddr, .baseVAddr = pageBase, .pages = pages, .perm = perm};
 
@@ -208,7 +208,7 @@ void VirtualMemory::free(uint64_t vaddr) {
                           " - no page is allocated there");
     }
     for (uint64_t i = 0; i < it->second.pages; ++i) {
-        _state->ram.free(it->second.basePAddr + (_pageSize * i));
+        _vmState->ram.free(it->second.basePAddr + (_pageSize * i));
     }
 
     _pageMap.erase(it);
@@ -220,7 +220,7 @@ uint8_t VirtualMemory::read8(uint64_t vaddr) {
         throw MemoryError("Read permission denied at " + std::to_string(vaddr));
     }
     uint64_t paddr = pg.basePAddr + (vaddr - pg.baseVAddr);
-    return _state->ram.read8(paddr);  // a single byte never spills into a different page
+    return _vmState->ram.read8(paddr);  // a single byte never spills into a different page
 }
 
 // if we allocate N pages of vram at once via one allocate() call, then all N pages will be adjacent
@@ -235,19 +235,19 @@ uint16_t VirtualMemory::read16(uint64_t vaddr) {
     // doesn't spill into a different allocation
     if ((pg.baseVAddr + _pageSize * pg.pages) >= (vaddr + 2)) {
         uint64_t paddr = pg.basePAddr + (vaddr - pg.baseVAddr);
-        return _state->ram.read16(paddr);
+        return _vmState->ram.read16(paddr);
     }
 
     // spilling case
     uint64_t paddr1 = pg.basePAddr + (vaddr - pg.baseVAddr);
-    uint8_t b1 = _state->ram.read8(paddr1);
+    uint8_t b1 = _vmState->ram.read8(paddr1);
 
     auto pg2 = _findVAlloc(vaddr + 1);
     if (!(pg2.perm & MEM_PERM_R)) {
         throw MemoryError("Read permission denied at " + std::to_string(vaddr));
     }
     uint64_t paddr2 = pg2.basePAddr + ((vaddr + 1) - pg2.baseVAddr);
-    uint16_t b2 = _state->ram.read8(paddr2) << 8;
+    uint16_t b2 = _vmState->ram.read8(paddr2) << 8;
     return b1 | b2;
 }
 uint32_t VirtualMemory::read32(uint64_t vaddr) {
@@ -260,12 +260,12 @@ uint32_t VirtualMemory::read32(uint64_t vaddr) {
     uint64_t paddr = pg.basePAddr + offset;
 
     if (remaining >= 4)
-        return _state->ram.read32(paddr);
+        return _vmState->ram.read32(paddr);
 
     uint32_t result = 0;
 
     for (uint64_t i = 0; i < remaining; ++i)
-        result |= uint32_t(_state->ram.read8(paddr + i)) << (i * 8);
+        result |= uint32_t(_vmState->ram.read8(paddr + i)) << (i * 8);
 
     auto pg2 = _findVAlloc(vaddr + remaining);
 
@@ -275,7 +275,7 @@ uint32_t VirtualMemory::read32(uint64_t vaddr) {
     uint64_t paddr2 = pg2.basePAddr + (vaddr + remaining - pg2.baseVAddr);
 
     for (uint64_t i = remaining; i < 4; ++i)
-        result |= uint32_t(_state->ram.read8(paddr2 + i - remaining)) << (i * 8);
+        result |= uint32_t(_vmState->ram.read8(paddr2 + i - remaining)) << (i * 8);
 
     return result;
 }
@@ -290,12 +290,12 @@ uint64_t VirtualMemory::read64(uint64_t vaddr) {
     uint64_t paddr = pg.basePAddr + offset;
 
     if (remaining >= 8)
-        return _state->ram.read64(paddr);
+        return _vmState->ram.read64(paddr);
 
     uint64_t result = 0;
 
     for (uint64_t i = 0; i < remaining; ++i)
-        result |= uint64_t(_state->ram.read8(paddr + i)) << (i * 8);
+        result |= uint64_t(_vmState->ram.read8(paddr + i)) << (i * 8);
 
     auto pg2 = _findVAlloc(vaddr + remaining);
 
@@ -305,7 +305,7 @@ uint64_t VirtualMemory::read64(uint64_t vaddr) {
     uint64_t paddr2 = pg2.basePAddr + (vaddr + remaining - pg2.baseVAddr);
 
     for (uint64_t i = remaining; i < 8; ++i)
-        result |= uint64_t(_state->ram.read8(paddr2 + i - remaining)) << (i * 8);
+        result |= uint64_t(_vmState->ram.read8(paddr2 + i - remaining)) << (i * 8);
 
     return result;
 }
@@ -328,7 +328,7 @@ ByteBuffer VirtualMemory::read(uint64_t vaddr, uint64_t len) {
 
         uint64_t paddr = pg.basePAddr + offset;
 
-        ByteBuffer part = _state->ram.read(paddr, chunk);
+        ByteBuffer part = _vmState->ram.read(paddr, chunk);
         result += part;
 
         copied += chunk;
@@ -346,7 +346,7 @@ void VirtualMemory::write8(uint64_t vaddr, uint8_t value) {
     }
 
     uint64_t paddr = pg.basePAddr + (vaddr - pg.baseVAddr);
-    _state->ram.write8(paddr, value);
+    _vmState->ram.write8(paddr, value);
 }
 
 void VirtualMemory::write16(uint64_t vaddr, uint16_t value) {
@@ -361,11 +361,11 @@ void VirtualMemory::write16(uint64_t vaddr, uint16_t value) {
     uint64_t paddr = pg.basePAddr + offset;
 
     if (remaining >= 2) {
-        _state->ram.write16(paddr, value);
+        _vmState->ram.write16(paddr, value);
         return;
     }
 
-    _state->ram.write8(paddr, value & 0xFF);
+    _vmState->ram.write8(paddr, value & 0xFF);
 
     auto pg2 = _findVAlloc(vaddr + 1);
     if (!(pg2.perm & MEM_PERM_W))
@@ -373,7 +373,7 @@ void VirtualMemory::write16(uint64_t vaddr, uint16_t value) {
                           " - writing not permitted at the corresponding page");
 
     uint64_t paddr2 = pg2.basePAddr + (vaddr + 1 - pg2.baseVAddr);
-    _state->ram.write8(paddr2, (value >> 8) & 0xFF);
+    _vmState->ram.write8(paddr2, (value >> 8) & 0xFF);
 }
 
 void VirtualMemory::write32(uint64_t vaddr, uint32_t value) {
@@ -388,12 +388,12 @@ void VirtualMemory::write32(uint64_t vaddr, uint32_t value) {
     uint64_t paddr = pg.basePAddr + offset;
 
     if (remaining >= 4) {
-        _state->ram.write32(paddr, value);
+        _vmState->ram.write32(paddr, value);
         return;
     }
 
     for (uint64_t i = 0; i < remaining; ++i)
-        _state->ram.write8(paddr + i, (value >> (i * 8)) & 0xFF);
+        _vmState->ram.write8(paddr + i, (value >> (i * 8)) & 0xFF);
 
     auto pg2 = _findVAlloc(vaddr + remaining);
     if (!(pg2.perm & MEM_PERM_W))
@@ -403,7 +403,7 @@ void VirtualMemory::write32(uint64_t vaddr, uint32_t value) {
     uint64_t paddr2 = pg2.basePAddr + (vaddr + remaining - pg2.baseVAddr);
 
     for (uint64_t i = remaining; i < 4; ++i)
-        _state->ram.write8(paddr2 + i - remaining, (value >> (i * 8)) & 0xFF);
+        _vmState->ram.write8(paddr2 + i - remaining, (value >> (i * 8)) & 0xFF);
 }
 
 void VirtualMemory::write64(uint64_t vaddr, uint64_t value) {
@@ -418,12 +418,12 @@ void VirtualMemory::write64(uint64_t vaddr, uint64_t value) {
     uint64_t paddr = pg.basePAddr + offset;
 
     if (remaining >= 8) {
-        _state->ram.write64(paddr, value);
+        _vmState->ram.write64(paddr, value);
         return;
     }
 
     for (uint64_t i = 0; i < remaining; ++i)
-        _state->ram.write8(paddr + i, (value >> (i * 8)) & 0xFF);
+        _vmState->ram.write8(paddr + i, (value >> (i * 8)) & 0xFF);
 
     auto pg2 = _findVAlloc(vaddr + remaining);
     if (!(pg2.perm & MEM_PERM_W))
@@ -433,7 +433,7 @@ void VirtualMemory::write64(uint64_t vaddr, uint64_t value) {
     uint64_t paddr2 = pg2.basePAddr + (vaddr + remaining - pg2.baseVAddr);
 
     for (uint64_t i = remaining; i < 8; ++i)
-        _state->ram.write8(paddr2 + i - remaining, (value >> (i * 8)) & 0xFF);
+        _vmState->ram.write8(paddr2 + i - remaining, (value >> (i * 8)) & 0xFF);
 }
 
 void VirtualMemory::write(uint64_t vaddr, const ByteBuffer& data) {
@@ -454,7 +454,7 @@ void VirtualMemory::write(uint64_t vaddr, const ByteBuffer& data) {
         uint64_t paddr = pg.basePAddr + offset;
 
         ByteBuffer part = data.slice(copied, chunk);
-        _state->ram.write(paddr, part);
+        _vmState->ram.write(paddr, part);
 
         copied += chunk;
     }

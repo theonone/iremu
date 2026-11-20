@@ -7,5 +7,4 @@
 struct VMState {
     CPU cpu;
     PhysicalMemory ram;
-    VMConfig config;
 };

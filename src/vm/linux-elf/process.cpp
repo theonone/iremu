@@ -2,11 +2,10 @@
 
 #include "../x64/state.hpp"
 #include "loader.hpp"
+#include "thread.hpp"
 
-Process::Process(VMState* state, int pid, int ppid) : _pid(pid), _ppid(ppid) {
-    _vmem.init(state);
+Process::Process(int32_t pid, int32_t ppid) : _pid(pid), _ppid(ppid) {
     ExecutableLoader loader;
-    loader.init(state);
 
     _threads.emplace_back(_threadCount++);
 }
@@ -20,8 +19,4 @@ VirtualMemory& Process::vmem() { return _vmem; }
 
 int Process::exitStatus() const { return _exitStatus; }
 
-Thread::Thread(int tid) : _tid(tid) {}
-
 StackMemory& Thread::stack() { return _stack; }
-
-Registers& Thread::regs() { return _regs; }
