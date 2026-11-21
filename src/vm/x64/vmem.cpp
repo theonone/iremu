@@ -205,8 +205,9 @@ void VirtualMemory::free(uint64_t vaddr) {
     auto lPageAddr = _firstPgAddr(vaddr);
     auto it = _pageMap.find(lPageAddr);
     if (it == _pageMap.end()) {
-        throw MemoryError("Cannot free memory at " + std::to_string(vaddr) +
-                          " - no page is allocated there");
+        return;
+        // throw MemoryError("Cannot free memory at " + std::to_string(vaddr) +
+        //                   " - no page is allocated there");
     }
     for (uint64_t i = 0; i < it->second.pages; ++i) {
         _vmState->ram.free(it->second.basePAddr + (_pageSize * i));
