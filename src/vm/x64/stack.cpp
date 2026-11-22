@@ -1,40 +1,46 @@
 #include "stack.hpp"
 
+#include <iostream>
+
 #include "../../common/errors.hpp"
 #include "../cfgProv.hpp"
 
 void StackMemory::_checkPages() {
-    if (_rsp - REDZONE < _lowestAddr) {
-        uint64_t size = (_lowestAddr + REDZONE) - _rsp;
+    if (_rsp - REDZONE < _lowestVaddr) {
+        uint64_t size = (_lowestVaddr + REDZONE) - _rsp;
         uint64_t pages = size / _pageSize + (size % _pageSize != 0);
-        _lowestAddr -= (pages * _pageSize);
-        if (STACK_TOP - _lowestAddr > _maxSize) {
+        _lowestVaddr -= (pages * _pageSize);
+
+        if (_topVaddr - _lowestVaddr > _maxSize) {
             throw MemoryError("Stack overflow. The limit of " + std::to_string(_maxSize) +
                               " was exceeded.");
         }
-        _vmem.allocate(size, _lowestAddr, MEM_PERM_RW);
+        _vmem.allocate(size, _lowestVaddr, MEM_PERM_RW);
     }
 }
 
 inline void StackMemory::_validateVaddr(uint64_t vaddr, uint64_t size) {
-    if ((vaddr < _rsp - REDZONE) || (vaddr > STACK_TOP - size)) {
+    if ((vaddr < _rsp - REDZONE) || (vaddr > _topVaddr - size)) {
         throw MemoryError("Bad stack memory access");
     }
 }
 
-StackMemory::StackMemory(VirtualMemory& vmem) : _vmem(vmem) {
-    _maxSize = ConfigProvider::get()
-                   .max_stack;  // if -1 i.e. unlimited, the value will turn into UINT64_MAX after
-                                // conversion. I didn't plan this ahead, but that's neat
+StackMemory::StackMemory(VirtualMemory& vmem, uint64_t topVaddr, uint64_t maxSize)
+    : _vmem(vmem), _topVaddr(topVaddr), _maxSize(maxSize) {
+    if (_maxSize > (uint64_t(8) * 1024 * 1024 * 1024 * 1024) || _maxSize < _pageSize) {
+        throw MemoryError("max_stack must be between page_size and 8TB");
+    }
     _pageSize = ConfigProvider::get().page_size;
+    _rsp = _topVaddr;
+    _lowestVaddr = _topVaddr;
     _checkPages();
 }
 
 StackMemory::~StackMemory() {
-    uint64_t size = STACK_TOP - _lowestAddr;
+    uint64_t size = _topVaddr - _lowestVaddr;
     uint64_t pageCount = size / _pageSize + (size % _pageSize != 0);
     for (size_t i = 0; i < pageCount; ++i) {
-        _vmem.free(_lowestAddr + (_pageSize * i));
+        _vmem.free(_lowestVaddr + (_pageSize * i));
     }
 }
 

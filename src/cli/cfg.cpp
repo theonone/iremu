@@ -8,9 +8,9 @@
 #include "../common/fileIO.hpp"
 #include "../common/stringTools.hpp"
 
-// parses {{uint} {B/KB/MB/GB} | unlimited} into an amount of bytes. can assume the input is trimmed
-// already. if allowUnlimited is false, will throw upon encountering this value
-int64_t parseSize(std::string s, bool allowUnlimited) {
+// parses {{uint} {B/KB/MB/GB/TB} | unlimited} into an amount of bytes. can assume the input is
+// trimmed already. if allowUnlimited is false, will throw upon encountering this value
+uint64_t parseSize(std::string s, bool allowUnlimited) {
     s = lowercase(s);
     if (s == "unlimited") {
         if (allowUnlimited) {
@@ -18,9 +18,9 @@ int64_t parseSize(std::string s, bool allowUnlimited) {
         }
         throw InputError("\"Unlimited\" not allowed here");
     }
-    int64_t len = s.length();
-    int64_t mult = 1;
-    int64_t suffLen = 0;
+    uint64_t len = s.length();
+    uint64_t mult = 1;
+    uint64_t suffLen = 0;
     if (len > 1 && s[len - 1] == 'b') {
         suffLen = 1;
         if (len > 2) {
@@ -33,22 +33,25 @@ int64_t parseSize(std::string s, bool allowUnlimited) {
             } else if (s[len - 2] == 'g') {
                 suffLen = 2;
                 mult = 1024 * 1024 * 1024;
+            } else if (s[len - 2] == 't') {
+                suffLen = 2;
+                mult = uint64_t(1024) * 1024 * 1024 * 1024;
             }
         }
     }
     if (suffLen == 0) {
         throw InputError("Invalid size - " + s);
     }
-    int64_t val;
+    uint64_t val;
     s = s.substr(0, s.length() - suffLen);
     try {
-        val = std::stoll(s);
+        val = std::stoull(s);
     } catch (const std::invalid_argument& e) {
-        throw InputError("Value cannot be parsed as a uint");
+        throw InputError("Value cannot be parsed as a uint64");
     } catch (const std::out_of_range& e) {
-        throw InputError("Value out of range (unsigned long)");
+        throw InputError("Value out of range (uint64)");
     }
-    int64_t orig = val;
+    uint64_t orig = val;
 
     val *= mult;
     if (val < orig) {
@@ -122,8 +125,8 @@ void fillConfig(VMConfig& conf, std::map<std::string, std::string>& args) {
                                    "target",     "ram_size",  "page_size"};
 
     conf.max_cycles = parseInt(args["max_cycles"]);
-    conf.max_stack = parseSize(args["max_stack"], true);
-    conf.max_heap = parseSize(args["max_heap"], true);
+    conf.max_stack = parseSize(args["max_stack"], false);
+    conf.max_heap = parseSize(args["max_heap"], false);
     conf.ram_size = parseSize(args["ram_size"], false);
     conf.page_size = parseSize(args["page_size"], false);
     conf.target = args["target"];

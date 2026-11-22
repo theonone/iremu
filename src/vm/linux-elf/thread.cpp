@@ -1,6 +1,11 @@
 #include "thread.hpp"
 
-Thread::Thread(int32_t tid, VirtualMemory& vmem) : _tid(tid), _stack(vmem) {}
+#include "../cfgProv.hpp"
+
+Thread::Thread(int32_t tid, VirtualMemory& vmem)
+    : _tid(tid),
+      _stack(vmem, GLB_STACK_TOP - (ConfigProvider::get().max_stack * tid),
+             ConfigProvider::get().max_stack) {}
 
 uint8_t Thread::state() const { return _state; }
 

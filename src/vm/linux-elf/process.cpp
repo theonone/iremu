@@ -1,5 +1,6 @@
 #include "process.hpp"
 
+// #include "../cfgProv.hpp"
 #include "../x64/vmState.hpp"
 #include "loader.hpp"
 #include "thread.hpp"
@@ -7,13 +8,14 @@
 Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string& elf)
     : _pid(pid), _ppid(ppid) {
     _vmem.init(vmState);
-    _threads.emplace_back(0, _vmem);
-    _threads.emplace_back(1, _vmem);
+    _threads.emplace_back(_nextTid++, _vmem);
+    _threads.emplace_back(_nextTid++, _vmem);
 
     ExecutableLoader loader;
     loader.load(elf, &_vmem, &(_threads[0].regs()));
 
     _state = PROC_STATE_READY;
+    _stackLowest = _heap.maxVaddr();
 }
 
 std::optional<ExecutionContext> Process::ctx() {

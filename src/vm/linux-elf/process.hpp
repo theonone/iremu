@@ -20,8 +20,11 @@ class Process {
     int32_t _ppid;
     VirtualMemory _vmem;
     VMState* _vmState = nullptr;
+    uint64_t _stackMargin;
+    uint64_t _stackLowest;
     HeapMemory _heap;
     std::vector<Thread> _threads;
+    int32_t _nextTid = 0;
     int _exitCode = 0;
     uint8_t _state = PROC_STATE_NEW;
     size_t _nextThread = 0;  // which thread to give CPU time to

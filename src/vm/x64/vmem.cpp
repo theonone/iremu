@@ -179,10 +179,14 @@ uint64_t VirtualMemory::allocate(uint64_t bytes, uint64_t vaddr, uint8_t perm) {
         throw MemoryError("Allocation exceeds the address limit");
     }
 
+    // first allocation that starts after vaddr
     auto next = _pageMap.lower_bound(pageBase);
 
     if (next != _pageMap.end() && next->first - pageBase < sizeToAlloc) {
-        throw MemoryError("Cannot allocate: virtual address range is already occupied");
+        throw MemoryError(
+            "Cannot allocate: virtual address range is already occupied (next page starts at " +
+            std::to_string(next->first) + ", need " + std::to_string(sizeToAlloc) + " bytes from " +
+            std::to_string(pageBase) + ")");
     }
 
     if (next != _pageMap.begin()) {
