@@ -9,6 +9,8 @@ Thread::Thread(int32_t tid, VirtualMemory& vmem)
 
 uint8_t Thread::state() const { return _state; }
 
+StackMemory& Thread::stack() { return _stack; }
+
 Registers& Thread::regs() { return _regs; }
 
 int32_t Thread::tid() const { return _tid; }

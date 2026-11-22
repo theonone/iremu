@@ -6,8 +6,8 @@ constexpr uint64_t REDZONE = 128;
 
 class StackMemory {
    private:
-    uint64_t _maxSize;
     VirtualMemory& _vmem;
+    uint64_t _maxSize;
     uint64_t _topVaddr;
     uint64_t _rsp;
     uint64_t _lowestVaddr;
@@ -24,6 +24,8 @@ class StackMemory {
     uint64_t pop();
 
     void updateRsp(uint64_t rsp);  // called after each cpu cycle
+    uint64_t rsp() const;
+    uint64_t topVaddr() const;
 
     uint8_t read8(uint64_t vaddr);
     uint16_t read16(uint64_t vaddr);
@@ -34,4 +36,9 @@ class StackMemory {
     void write16(uint64_t vaddr, uint16_t value);
     void write32(uint64_t vaddr, uint32_t value);
     void write64(uint64_t vaddr, uint64_t value);
+
+    StackMemory(const StackMemory&) = delete;
+    StackMemory& operator=(const StackMemory&) = delete;
+    StackMemory(StackMemory&&) = delete;
+    StackMemory& operator=(StackMemory&&) = delete;
 };

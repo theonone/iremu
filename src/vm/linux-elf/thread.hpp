@@ -22,4 +22,9 @@ class Thread {
 
     StackMemory& stack();
     Registers& regs();
+
+    Thread(const Thread&) = delete;
+    Thread& operator=(const Thread&) = delete;
+    Thread(Thread&&) = delete;
+    Thread& operator=(Thread&&) = delete;
 };

@@ -23,7 +23,7 @@ class Process {
     uint64_t _stackMargin;
     uint64_t _stackLowest;
     HeapMemory _heap;
-    std::vector<Thread> _threads;
+    std::vector<Thread*> _threads;
     int32_t _nextTid = 0;
     int _exitCode = 0;
     uint8_t _state = PROC_STATE_NEW;
@@ -31,6 +31,7 @@ class Process {
 
    public:
     explicit Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string& elf);
+    ~Process();
 
     std::optional<ExecutionContext> ctx();
 

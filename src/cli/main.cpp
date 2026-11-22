@@ -9,7 +9,7 @@
 std::map<std::string, std::string> parseArgs(int argc, char** argv) {
     std::map<std::string, std::string> m;
     bool targetFound = false;
-    for (size_t i = 1; i < argc; ++i) {
+    for (size_t i = 1; i < size_t(argc); ++i) {
         if (startswith(argv[i], "--")) {
             std::string arg = (argv[i] + 2);
             auto eq = arg.find('=');
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
     try {
         result = vm.run();
     } catch (std::exception& e) {
-        std::cout << e.what() << std::endl;
+        std::cout << "Error: " << e.what() << std::endl;
     }
     if (conf.verbose) {
         std::cout << "Process finished with exit code " << result << std::endl;

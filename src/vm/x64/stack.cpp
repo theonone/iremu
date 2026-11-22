@@ -1,7 +1,5 @@
 #include "stack.hpp"
 
-#include <iostream>
-
 #include "../../common/errors.hpp"
 #include "../cfgProv.hpp"
 
@@ -21,16 +19,16 @@ void StackMemory::_checkPages() {
 
 inline void StackMemory::_validateVaddr(uint64_t vaddr, uint64_t size) {
     if ((vaddr < _rsp - REDZONE) || (vaddr > _topVaddr - size)) {
-        throw MemoryError("Bad stack memory access");
+        throw MemoryError("Bad stack access");
     }
 }
 
 StackMemory::StackMemory(VirtualMemory& vmem, uint64_t topVaddr, uint64_t maxSize)
-    : _vmem(vmem), _topVaddr(topVaddr), _maxSize(maxSize) {
+    : _vmem(vmem), _maxSize(maxSize), _topVaddr(topVaddr) {
+    _pageSize = ConfigProvider::get().page_size;
     if (_maxSize > (uint64_t(8) * 1024 * 1024 * 1024 * 1024) || _maxSize < _pageSize) {
         throw MemoryError("max_stack must be between page_size and 8TB");
     }
-    _pageSize = ConfigProvider::get().page_size;
     _rsp = _topVaddr;
     _lowestVaddr = _topVaddr;
     _checkPages();
@@ -57,6 +55,10 @@ void StackMemory::updateRsp(uint64_t rsp) {
     _rsp = rsp;
     _checkPages();
 }
+
+uint64_t StackMemory::rsp() const { return _rsp; }
+
+uint64_t StackMemory::topVaddr() const { return _topVaddr; }
 
 uint8_t StackMemory::read8(uint64_t vaddr) {
     _validateVaddr(vaddr, 1);

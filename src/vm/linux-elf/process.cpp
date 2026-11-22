@@ -8,14 +8,21 @@
 Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string& elf)
     : _pid(pid), _ppid(ppid) {
     _vmem.init(vmState);
-    _threads.emplace_back(_nextTid++, _vmem);
-    _threads.emplace_back(_nextTid++, _vmem);
+
+    _threads.push_back(new Thread(_nextTid++, _vmem));
+    _threads.push_back(new Thread(_nextTid++, _vmem));
 
     ExecutableLoader loader;
-    loader.load(elf, &_vmem, &(_threads[0].regs()));
+    loader.load(elf, &_vmem, &(_threads[0]->regs()));
 
     _state = PROC_STATE_READY;
     _stackLowest = _heap.maxVaddr();
+}
+
+Process::~Process() {
+    for (const auto ptr : _threads) {
+        delete ptr;
+    }
 }
 
 std::optional<ExecutionContext> Process::ctx() {
@@ -33,14 +40,14 @@ std::optional<ExecutionContext> Process::ctx() {
             _nextThread = 0;
         }
 
-        Thread& thr = _threads[thisThread];
-        if (thr.state() == THR_STATE_READY) {
+        Thread* thr = _threads[thisThread];
+        if (thr->state() == THR_STATE_READY) {
             return ExecutionContext{
                 .heap = _heap,
-                .stack = thr.stack(),
-                .regs = thr.regs(),
+                .stack = thr->stack(),
+                .regs = thr->regs(),
                 .pid = _pid,
-                .tid = thr.tid(),
+                .tid = thr->tid(),
             };
         }
 
@@ -58,5 +65,3 @@ int32_t Process::pid() const { return _pid; }
 int32_t Process::ppid() const { return _ppid; }
 
 int Process::exitCode() const { return _exitCode; }
-
-StackMemory& Thread::stack() { return _stack; }

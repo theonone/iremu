@@ -36,6 +36,7 @@ const VAlloc& VirtualMemory::_findVAlloc(uint64_t vaddr) const {
 
     const VAlloc& pg = it->second;
     if (vaddr - pg.baseVAddr >= pg.pages * _pageSize) {
+        std::cout << _pageMap.size() << " pages allocated:" << std::endl;
         for (const auto& p : _pageMap) {
             std::cout << p.first << " - " << p.second.pages << std::endl;
         }
