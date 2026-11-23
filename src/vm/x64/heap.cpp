@@ -1,26 +1,28 @@
 #include "heap.hpp"
 
-#include <iostream>
-
 #include "../../common/errors.hpp"
 #include "../cfgProv.hpp"
 
-HeapMemory::HeapMemory(VirtualMemory* vmem, uint64_t base)
-    : _vmem(vmem), _base(base), _mappedEnd(base), _brk(base) {
+HeapMemory::HeapMemory(VirtualMemory* vmem) : _vmem(vmem) {
     auto& cfg = ConfigProvider::get();
     _maxSize = cfg.max_heap;
     _pageSize = cfg.page_size;
-    if (base % _pageSize != 0) {
-        throw MemoryError("Heap base isn't page-aligned");
-    }
 }
 
 HeapMemory::~HeapMemory() {
-    std::cout << "heap destructor called!" << std::endl;
     uint64_t pages =
         (_mappedEnd - _base) / _pageSize;  // since both are page-aligned, simple division is enough
     for (size_t i = 0; i < pages; ++i) {
         _vmem->free(_base + (_pageSize * i));
+    }
+}
+
+void HeapMemory::setBase(uint64_t base) {
+    _base = base;
+    _brk = base;
+    _mappedEnd = base;
+    if (base % _pageSize != 0) {
+        throw MemoryError("Heap base isn't page-aligned");
     }
 }
 
@@ -37,7 +39,7 @@ uint64_t HeapMemory::sbrk(int64_t bytes) {
     uint64_t origBrk = _brk;
 
     if (bytes > 0) {
-        if (bytes > _mappedEnd - _brk) {
+        if (uint64_t(bytes) > _mappedEnd - _brk) {
             uint64_t heapSize = uint64_t(_brk - _base) + bytes;
             uint64_t newPages = heapSize / _pageSize + (heapSize % _pageSize != 0);
             if (newPages * _pageSize > _maxSize) {

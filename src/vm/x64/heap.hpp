@@ -14,8 +14,11 @@ class HeapMemory {
     inline void _validateVaddr(uint64_t vaddr, uint64_t size);
 
    public:
-    HeapMemory(VirtualMemory* vmem, uint64_t base);
+    HeapMemory(VirtualMemory* vmem);
     ~HeapMemory();
+
+    // ONLY meant to be called by Loader before any real work happens
+    void setBase(uint64_t base);
 
     int brk(uint64_t vaddr);
     uint64_t sbrk(int64_t bytes);

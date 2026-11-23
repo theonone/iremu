@@ -6,17 +6,17 @@
 #include "thread.hpp"
 
 Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string& elf)
-    : _pid(pid), _ppid(ppid), _heap(&_vmem, 4096) {
+    : _pid(pid), _ppid(ppid), _heap(&_vmem) {
     _vmem.init(vmState);
 
     _threads.push_back(new Thread(_nextTid++, _vmem));
-    _threads.push_back(new Thread(_nextTid++, _vmem));
 
-    ExecutableLoader loader;
-    loader.load(elf, &_vmem, &(_threads[0]->regs()));
+    auto& thr = _threads[0];
+    ExecutableLoader loader(
+        elf, &_vmem,
+        {.heap = _heap, .stack = thr->stack(), .regs = thr->regs(), .pid = 0, .tid = 0});
 
     _state = PROC_STATE_READY;
-    _stackLowest = _heap.mappedEnd();
 }
 
 Process::~Process() {

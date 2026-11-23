@@ -21,8 +21,6 @@ class Process {
     int32_t _ppid;
     VirtualMemory _vmem;
     VMState* _vmState = nullptr;
-    uint64_t _stackMargin;
-    uint64_t _stackLowest;
     HeapMemory _heap;
     std::vector<Thread*> _threads;
     int32_t _nextTid = 0;

@@ -9,12 +9,15 @@ class ExecutableLoader {
     ByteBuffer _fileContents;
     std::string _fp;
     VirtualMemory* _vmem = nullptr;
-    Registers* _regs = nullptr;
+    ExecutionContext _ctx;
+    uint64_t _heapBase;
+    uint64_t _pageSize;
 
     void _validateELF();
     void _processPhEntries();
 
+    void _readField(void* var, uint64_t off, uint8_t bytes);
+
    public:
-    ExecutableLoader() = default;
-    void load(const std::string& filepath, VirtualMemory* vmem, Registers* regs);
+    ExecutableLoader(const std::string& filepath, VirtualMemory* vmem, ExecutionContext ctx);
 };
