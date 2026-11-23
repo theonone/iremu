@@ -14,6 +14,7 @@ constexpr uint8_t PROC_STATE_WAITING = 2;
 constexpr uint8_t PROC_STATE_ZOMBIE = 3;
 constexpr uint8_t PROC_STATE_DEAD = 4;
 
+// TODO: delete copy and move stuff from here and heap
 class Process {
    private:
     int32_t _pid;

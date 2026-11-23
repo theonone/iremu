@@ -33,6 +33,7 @@ int ProcessManager::run() {
             auto ctx = it->second.ctx();
             if (ctx.has_value()) {
                 std::cout << "running process " << it->second.pid() << std::endl;
+
                 _vmState->cpu.run(ctx.value(), n);
             }
         }
