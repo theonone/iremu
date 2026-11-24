@@ -1,6 +1,8 @@
 #include "process.hpp"
 
 // #include "../cfgProv.hpp"
+#include <iostream>
+
 #include "../x64/vmState.hpp"
 #include "loader.hpp"
 #include "thread.hpp"
@@ -12,10 +14,28 @@ Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string&
     _threads.push_back(new Thread(_nextTid++, _vmem));
 
     auto& thr = _threads[0];
-    ExecutableLoader loader(
-        elf, &_vmem,
-        {.heap = _heap, .stack = thr->stack(), .regs = thr->regs(), .pid = 0, .tid = 0});
+    {
+        ExecutableLoader loader(
+            elf, &_vmem,
+            {.heap = _heap, .stack = thr->stack(), .regs = thr->regs(), .pid = 0, .tid = 0});
+    }
+    std::cout << "ELF loaded successfully. heap base=" << _heap.base()
+              << ", rip=" << thr->regs().rip << ", rsp=" << thr->regs().rsp
+              << ", rbp=" << thr->regs().rbp << std::endl;
 
+    std::cout << "vmem page map:" << std::endl;
+    for (const auto& entry : _vmem.pageMap()) {
+        std::string perm;
+        if (entry.second.perm & MEM_PERM_R)
+            perm += 'R';
+        if (entry.second.perm & MEM_PERM_W)
+            perm += 'W';
+        if (entry.second.perm & MEM_PERM_X)
+            perm += 'X';
+
+        std::cout << entry.first << "-" << entry.first + entry.second.pages * 4096 << ", " << perm
+                  << std::endl;
+    }
     _state = PROC_STATE_READY;
 }
 

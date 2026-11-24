@@ -12,6 +12,7 @@ class ExecutableLoader {
     ExecutionContext _ctx;
     uint64_t _heapBase;
     uint64_t _pageSize;
+    bool _verbose;
 
     void _validateELF();
     void _processPhEntries();

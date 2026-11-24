@@ -49,6 +49,9 @@ class VirtualMemory {
 
     void free(uint64_t vaddr);
 
+    // adds permissions for a range of addresses. if
+    // void addPermissionsRange(uint64_t vaddr1, uint64_t vaddr2, uint8_t perm);
+
     uint8_t read8(uint64_t vaddr);
     uint16_t read16(uint64_t vaddr);
     uint32_t read32(uint64_t vaddr);
@@ -61,7 +64,7 @@ class VirtualMemory {
     void write16(uint64_t vaddr, uint16_t value);
     void write32(uint64_t vaddr, uint32_t value);
     void write64(uint64_t vaddr, uint64_t value);
-    void write(uint64_t vaddr, const ByteBuffer& data);
+    void write(uint64_t vaddr, const ByteBuffer& data, bool bypassPerm = false);
 
     const std::map<uint64_t, VAlloc>& pageMap() const;
 

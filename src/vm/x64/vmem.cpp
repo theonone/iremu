@@ -221,6 +221,18 @@ void VirtualMemory::free(uint64_t vaddr) {
     _pageMap.erase(it);
 }
 
+// void VirtualMemory::addPermissionsRange(uint64_t vaddr1, uint64_t vaddr2, uint8_t perm) {
+//     auto it = _pageMap.lower_bound(vaddr1);
+
+//     for (; it != _pageMap.end(); ++it) {
+//         auto& entry = *it;
+//         if (entry.first > vaddr2) {
+//             break;
+//         }
+//         entry.second.perm |= perm;
+//     }
+// }
+
 uint8_t VirtualMemory::read8(uint64_t vaddr) {
     auto pg = _findVAlloc(vaddr);
     if (!(pg.perm & MEM_PERM_R)) {
@@ -443,14 +455,14 @@ void VirtualMemory::write64(uint64_t vaddr, uint64_t value) {
         _vmState->ram.write8(paddr2 + i - remaining, (value >> (i * 8)) & 0xFF);
 }
 
-void VirtualMemory::write(uint64_t vaddr, const ByteBuffer& data) {
+void VirtualMemory::write(uint64_t vaddr, const ByteBuffer& data, bool bypassPerm) {
     uint64_t len = data.size();
     uint64_t copied = 0;
 
     while (copied < len) {
         auto pg = _findVAlloc(vaddr + copied);
 
-        if (!(pg.perm & MEM_PERM_W))
+        if ((!bypassPerm) && !(pg.perm & MEM_PERM_W))
             throw MemoryError("Cannot write to " + std::to_string(vaddr + copied) +
                               " - writing not permitted at the corresponding page");
 

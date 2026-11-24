@@ -75,6 +75,8 @@ uint64_t HeapMemory::sbrk(int64_t bytes) {
 
 uint64_t HeapMemory::mappedEnd() const { return _mappedEnd; }
 
+uint64_t HeapMemory::base() const { return _base; }
+
 inline void HeapMemory::_validateVaddr(uint64_t vaddr, uint64_t size) {
     if ((vaddr < _base) || (vaddr > _mappedEnd - 1 - size)) {
         throw MemoryError("Bad heap access");

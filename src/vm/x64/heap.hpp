@@ -24,6 +24,7 @@ class HeapMemory {
     uint64_t sbrk(int64_t bytes);
 
     uint64_t mappedEnd() const;
+    uint64_t base() const;
 
     uint8_t read8(uint64_t vaddr);
     uint16_t read16(uint64_t vaddr);
