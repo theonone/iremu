@@ -8,7 +8,6 @@ class ExecutableLoader {
    private:
     ByteBuffer _fileContents;
     std::string _fp;
-    VirtualMemory* _vmem = nullptr;
     ExecutionContext _ctx;
     uint64_t _heapBase;
     uint64_t _pageSize;
@@ -20,5 +19,5 @@ class ExecutableLoader {
     void _readField(void* var, uint64_t off, uint8_t bytes);
 
    public:
-    ExecutableLoader(const std::string& filepath, VirtualMemory* vmem, ExecutionContext ctx);
+    ExecutableLoader(const std::string& filepath, ExecutionContext ctx);
 };

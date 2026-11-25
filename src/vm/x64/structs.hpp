@@ -29,6 +29,7 @@ struct Registers {
 };
 
 struct ExecutionContext {
+    VirtualMemory& vmem;
     HeapMemory& heap;
     StackMemory& stack;
     Registers& regs;

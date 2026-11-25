@@ -112,18 +112,18 @@ void ExecutableLoader::_processPhEntries() {
                 vmemPerm |= MEM_PERM_R;
             }
             try {
-                _vmem->allocate(memsz, vaddr, vmemPerm);
+                _ctx.vmem.allocate(memsz, vaddr, vmemPerm);
             } catch (const MemoryError& e) {
                 throw MemoryError("Couldn't allocate " + std::to_string(memsz) +
                                   " bytes of memory for segment at index " + std::to_string(i) +
                                   ". Original message: " + e.what());
             }
-            _vmem->write(vaddr, segment, true);
+            _ctx.vmem.write(vaddr, segment, true);
             if (memsz > filesz) {
                 ByteBuffer zeros = {};
                 zeros.resize(memsz - filesz);
                 memset(zeros.data(), 0, memsz - filesz);
-                _vmem->write(vaddr + filesz, zeros);
+                _ctx.vmem.write(vaddr + filesz, zeros);
             }
 
             if (vaddr + memsz > firstPastSegments) {
@@ -162,13 +162,10 @@ void ExecutableLoader::_readField(void* var, uint64_t off, uint8_t bytes) {
     memcpy(var, _fileContents.cdata() + off, bytes);
 }
 
-ExecutableLoader::ExecutableLoader(const std::string& filepath, VirtualMemory* vmem,
-                                   ExecutionContext ctx)
-    : _ctx(ctx) {
+ExecutableLoader::ExecutableLoader(const std::string& filepath, ExecutionContext ctx) : _ctx(ctx) {
     _fileContents = readFileAsBytes(filepath);
     _pageSize = ConfigProvider::get().page_size;
     _verbose = ConfigProvider::get().verbose;
-    _vmem = vmem;
     _validateELF();
     _processPhEntries();
 

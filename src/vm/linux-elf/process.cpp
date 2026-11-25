@@ -15,9 +15,12 @@ Process::Process(VMState* vmState, int32_t pid, int32_t ppid, const std::string&
 
     auto& thr = _threads[0];
     {
-        ExecutableLoader loader(
-            elf, &_vmem,
-            {.heap = _heap, .stack = thr->stack(), .regs = thr->regs(), .pid = 0, .tid = 0});
+        ExecutableLoader loader(elf, {.vmem = _vmem,
+                                      .heap = _heap,
+                                      .stack = thr->stack(),
+                                      .regs = thr->regs(),
+                                      .pid = 0,
+                                      .tid = 0});
     }
     std::cout << "ELF loaded successfully. heap base=" << _heap.base()
               << ", rip=" << thr->regs().rip << ", rsp=" << thr->regs().rsp
@@ -63,6 +66,7 @@ std::optional<ExecutionContext> Process::ctx() {
         Thread* thr = _threads[thisThread];
         if (thr->state() == THR_STATE_READY) {
             return ExecutionContext{
+                .vmem = _vmem,
                 .heap = _heap,
                 .stack = thr->stack(),
                 .regs = thr->regs(),
